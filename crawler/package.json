@@ -1,0 +1,13 @@
+{
+  "name": "omt-daily-crawler",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "crawl": "node run.mjs",
+    "install:browsers": "playwright install --with-deps chromium"
+  },
+  "dependencies": {
+    "playwright": "1.54.1"
+  }
+}
