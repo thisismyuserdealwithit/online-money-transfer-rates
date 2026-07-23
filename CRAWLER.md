@@ -1,6 +1,6 @@
 # Daily rate checker
 
-The public site stores structured quote records in D1 and immutable screenshots in R2. A separate scheduled browser process visits public provider calculators and posts validated captures to `/api/ingest`.
+The public site stores structured quote records in D1 on Sites or Postgres on Render. Immutable screenshots use R2 on Sites. On Render they use a configured S3-compatible bucket, with Postgres as the initial fallback. A separate scheduled browser process visits public provider calculators and posts validated captures to `/api/ingest`.
 
 ## Current provider adapters
 
@@ -24,7 +24,7 @@ WorldRemit currently introduces a human verification step, ACE and OrbitRemit bl
 
 ## Schedule
 
-The included GitHub Actions workflow is ready to run at 05:17 UTC every day and can also be started manually. A workflow file inside the Sites source repository does not schedule itself: the crawler directory and workflow must be mirrored to a GitHub repository with Actions enabled. Set repository secrets `INGEST_ENDPOINT`, `INGEST_TOKEN` and, while the Sites URL is owner-only, `SITES_BYPASS_TOKEN`. The ingest token must match the site runtime secret.
+The included GitHub Actions workflow runs at 05:17 UTC every day and can also be started manually. Set repository secrets `INGEST_ENDPOINT` and `INGEST_TOKEN`. The ingest token must match the runtime secret on Render or Sites. Add `SITES_BYPASS_TOKEN` only while posting to an owner-protected Sites URL; Render does not use it.
 
 For a focused manual run, set `CORRIDOR_FILTER` and/or `PROVIDER_FILTER` to comma-separated slugs before starting the crawler.
 When one public comparison response contains several providers, the ingest stores its proof image once and links every provider row to that immutable object.

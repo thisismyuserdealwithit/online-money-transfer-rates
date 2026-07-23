@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { query } from "@/lib/platform-runtime";
 import {
   remittanceCountryInputs,
   rpwCorridorBenchmarks,
@@ -49,7 +49,7 @@ function median(values: number[]) {
 
 async function getCurrentVerifiedPanel() {
   try {
-    const result = await env.DB.prepare(`
+    const rows = await query<QuotePanelRow>(`
       SELECT q.corridor_slug, q.provider_slug, q.recipient_amount, q.captured_at
       FROM quotes q
       INNER JOIN (
@@ -67,9 +67,9 @@ async function getCurrentVerifiedPanel() {
       WHERE q.status != 'invalid'
         AND q.quote_type = 'verified'
         AND q.promotion = 0
-    `).all<QuotePanelRow>();
+    `);
     const freshAfter = Date.now() - 36 * 60 * 60 * 1000;
-    return result.results.filter((row) => Date.parse(row.captured_at) >= freshAfter);
+    return rows.filter((row) => Date.parse(row.captured_at) >= freshAfter);
   } catch {
     return [];
   }

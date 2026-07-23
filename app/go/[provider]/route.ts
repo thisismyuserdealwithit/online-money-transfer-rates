@@ -1,5 +1,5 @@
-import { env } from "cloudflare:workers";
 import { fillTrackingTemplate, getAffiliateDestination } from "@/lib/affiliate";
+import { batch } from "@/lib/platform-runtime";
 
 const safeValue = (value: string | null, fallback: string, max = 100) => {
   if (!value) return fallback;
@@ -43,8 +43,8 @@ async function recordClick(input: {
   referrerPath: string | null;
   clickedAt: string;
 }) {
-  await env.DB.batch([
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS affiliate_clicks (
+  await batch([
+    { sql: `CREATE TABLE IF NOT EXISTS affiliate_clicks (
       id TEXT PRIMARY KEY NOT NULL,
       provider_slug TEXT NOT NULL,
       corridor_slug TEXT,
@@ -55,14 +55,16 @@ async function recordClick(input: {
       session_hash TEXT,
       referrer_path TEXT,
       clicked_at TEXT NOT NULL
-    )`),
-    env.DB.prepare("CREATE INDEX IF NOT EXISTS affiliate_clicks_provider_date_idx ON affiliate_clicks (provider_slug, clicked_at)"),
-    env.DB.prepare("CREATE INDEX IF NOT EXISTS affiliate_clicks_corridor_date_idx ON affiliate_clicks (corridor_slug, clicked_at)"),
-    env.DB.prepare(`INSERT INTO affiliate_clicks (
-      id, provider_slug, corridor_slug, placement, destination_host, commercial,
-      consent_mode, session_hash, referrer_path, clicked_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(input.id, input.providerSlug, input.corridorSlug, input.placement, input.destinationHost, input.commercial ? 1 : 0, input.consentMode, input.sessionHash, input.referrerPath, input.clickedAt),
+    )` },
+    { sql: "CREATE INDEX IF NOT EXISTS affiliate_clicks_provider_date_idx ON affiliate_clicks (provider_slug, clicked_at)" },
+    { sql: "CREATE INDEX IF NOT EXISTS affiliate_clicks_corridor_date_idx ON affiliate_clicks (corridor_slug, clicked_at)" },
+    {
+      sql: `INSERT INTO affiliate_clicks (
+        id, provider_slug, corridor_slug, placement, destination_host, commercial,
+        consent_mode, session_hash, referrer_path, clicked_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      params: [input.id, input.providerSlug, input.corridorSlug, input.placement, input.destinationHost, input.commercial ? 1 : 0, input.consentMode, input.sessionHash, input.referrerPath, input.clickedAt],
+    },
   ]);
 }
 

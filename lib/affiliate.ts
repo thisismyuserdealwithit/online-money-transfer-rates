@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { runtimeValue } from "@/lib/platform-runtime";
 
 type AffiliateEntry = {
   url: string;
@@ -49,7 +49,7 @@ const providerDestinations: Record<string, string> = {
 };
 
 function configuredLinks() {
-  const value = (env as unknown as Record<string, unknown>).AFFILIATE_LINKS_JSON;
+  const value = runtimeValue("AFFILIATE_LINKS_JSON");
   if (typeof value !== "string" || !value.trim()) return {} as Record<string, string>;
   try {
     const parsed = JSON.parse(value) as Record<string, unknown>;

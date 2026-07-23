@@ -1,108 +1,138 @@
-# vinext-starter
+# Online Money Transfer Rates
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Source for [onlinemoneytransfer.co.uk](https://onlinemoneytransfer.co.uk), a proof-led comparison site for international money transfers. It publishes corridor-specific quotes, keeps the screenshot behind each result and retains older captures for historical analysis.
 
-## Prerequisites
+The application now supports two deployment targets from the same source:
 
-- Node.js `>=22.13.0`
-- Linux with `flock`, `curl`, and GNU `timeout`
+- Render: standard Next.js, Render Postgres and either Postgres-backed proof storage or an S3-compatible object store.
+- OpenAI Sites: Vinext, Cloudflare D1 and R2.
 
-## Sites Lifecycle
+The scheduled Playwright crawler remains in GitHub Actions. It visits public provider quote tools and sends structured quote records and screenshots to the chosen deployment.
 
-The Sites lifecycle CLI runs the locked dependency install before returning this checkout. Edit the source under `app/`, then checkpoint when a coherent milestone is ready to inspect or share. The remote Sites builder runs `npm run build` against the pushed commit. Do not repeat install or build as a normal pre-checkpoint step.
+## Deploy on Render
 
-This starter does not use `wrangler.jsonc`.
+The repository includes a Render Blueprint in `render.yaml`. In Render:
 
-`install:ci` is intentionally a single, non-retrying `npm ci`. It refuses a concurrent install for the same project, consumes a matching image-seeded npm cache with `--prefer-offline` while retaining registry fallback for a missing cache object, otherwise downloads and verifies the complete vinext tarball recorded in `package-lock.json`, limits npm to one socket, and terminates a stalled install. `build` applies a short timeout and then validates the Sites artifact. These helpers target Linux and use GNU `timeout`; they are not native macOS scripts.
+1. Choose **New**, then **Blueprint**.
+2. Connect this GitHub repository.
+3. Enter strong values for `INGEST_TOKEN`, `MANUAL_INGEST_TOKEN` and `AFFILIATE_REPORT_TOKEN` when Render prompts for them.
+4. Apply the Blueprint.
 
-Scripts that need writable project-scoped home, npm, XDG, and temporary paths use `scripts/sites-env.sh`. The `dev` and `start` scripts honor the caller's runtime environment and keep Wrangler logs inside the checkout. The generated `.sites-runtime/` directory is disposable and ignored by Git.
+The Blueprint creates:
 
-## Included Shape
+- a Frankfurt Node web service on the Starter plan;
+- a Frankfurt Render Postgres database on the Basic 256 MB plan;
+- an automatic pre-deploy schema migration;
+- a `/api/health` database health check;
+- automatic deployments from commits to the connected branch.
 
-- edit site code under `app/`
-- `app/chatgpt-auth.ts` provides optional dispatch-owned ChatGPT sign-in helpers
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+The build and start commands are:
 
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```sh
+npm ci
+npm run render:build
+npm run db:migrate:render
+npm run render:start
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+`DATABASE_URL` is supplied automatically by the Blueprint.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+### Proof screenshot storage
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+The first Render deployment works without another service. In that mode screenshots are kept in the `proof_objects` Postgres table. This is useful for initial verification, but a growing screenshot archive will increase database storage.
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+For production volume, configure an S3-compatible bucket on the Render web service:
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+```text
+S3_BUCKET
+S3_REGION
+S3_ENDPOINT
+S3_ACCESS_KEY_ID
+S3_SECRET_ACCESS_KEY
+S3_FORCE_PATH_STYLE
+```
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+`S3_ENDPOINT` and `S3_FORCE_PATH_STYLE` are optional for AWS S3. They allow the same code to use services such as Cloudflare R2. New proof images use object storage as soon as `S3_BUCKET` is present. Existing Postgres-backed images should be migrated before switching if their old proof links need to remain available.
 
-## Diagnostic Commands
+### Connect the daily crawler
 
-- `npm run install:ci`: perform the one bounded lockfile install
-- `npm run dev`: start the Vite/Vinext development server
-- `npm run build`: build and validate the deployable Sites artifact
-- `npm run start`: start the built Vinext application
-- `npm test`: build, validate, and verify the rendered development-preview metadata
-- `npm run validate:artifact`: recheck an existing artifact's manifest and ESM `default.fetch` export
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+Once Render gives the web service its public URL, add these GitHub Actions repository secrets:
 
-Use build and validation commands for targeted diagnosis after a remote failure, not as part of the normal checkpoint path.
+```text
+INGEST_ENDPOINT=https://your-render-domain.example/api/ingest
+INGEST_TOKEN=the-same-value-entered-in-render
+```
 
-The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, and `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
+`SITES_BYPASS_TOKEN` is only needed when the crawler posts to an owner-protected Sites deployment. It is not needed for Render.
 
-## Learn More
+The workflow in `.github/workflows/daily-rates.yml` runs at 05:17 UTC every day and can also be started manually.
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+### Existing Sites history
+
+Deploying the Render Blueprint creates a clean database. It does not silently copy the existing D1 and R2 archive. Keep the current Sites deployment active until its historical quote rows and proof objects have been exported and imported. New crawler captures can be directed to Render immediately after its ingest endpoint is verified.
+
+## Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Render Postgres connection string |
+| `INGEST_TOKEN` | Bearer token used by the scheduled crawler |
+| `MANUAL_INGEST_TOKEN` | Separate bearer token for controlled manual imports |
+| `AFFILIATE_REPORT_TOKEN` | Protects the affiliate click report endpoint |
+| `AFFILIATE_LINKS_JSON` | Optional JSON map of provider slugs to tracked URLs |
+| `PGSSL=require` | Optional for external PostgreSQL connections that require TLS |
+| `PG_POOL_MAX` | Optional Postgres connection pool limit, default 10 |
+| `S3_*` | Optional S3-compatible proof storage settings described above |
+
+Never commit real token values or local `.env` files.
+
+## Data model
+
+The Postgres migration in `render/postgres-schema.sql` creates:
+
+- `corridors`
+- `providers`
+- `crawl_runs`
+- `quotes`
+- `affiliate_clicks`
+- `proof_objects`, used only when external object storage is not configured
+
+Captured timestamps remain ISO 8601 text so the same reporting queries work against both D1 and Postgres. Quote and proof records are append-only in normal operation. A newer quote marks the previous current result stale or invalid without deleting the historical row.
+
+## Local verification
+
+Requirements:
+
+- Node.js 22.13 or later
+- a PostgreSQL database for a full local Render runtime
+
+Useful checks:
+
+```sh
+npm run lint
+npm run test:render-schema
+npm run render:build
+npm test
+```
+
+`npm run test:render-schema` loads the complete migration into an in-memory PostgreSQL-compatible test database and verifies quote, proof and affiliate records. `npm test` builds and checks the existing Sites target.
+
+For a local Render-style server, set `DATABASE_URL`, run the migration, build and start:
+
+```sh
+export DATABASE_URL=postgresql://...
+npm run db:migrate:render
+npm run render:build
+npm run render:start
+```
+
+## Publishing rules
+
+1. A verified result needs a source amount, recipient amount, fee and timestamped provider proof.
+2. Indicative converter results stay outside the cheapest verified calculation.
+3. Failed captures never overwrite the most recent successful result.
+4. Screenshots are immutable. Corrections create a new record.
+5. Promotions, card funding, cash pickup, wallets and business quotes are labelled as different comparison cases.
+6. A provider name is not treated as a quote until a reproducible result has been captured.
+
+See [CRAWLER.md](CRAWLER.md) for provider-specific capture rules and operational notes.

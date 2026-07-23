@@ -1,4 +1,11 @@
-import { env } from "cloudflare:workers";
+import {
+  batch,
+  execute,
+  putObject,
+  queryOne,
+  runtimeValue,
+  type SqlStatement,
+} from "@/lib/platform-runtime";
 
 type IngestPayload = {
   kind?: "quote" | "quote-batch" | "run-summary";
@@ -93,8 +100,8 @@ function normalizeQuote(body: IngestPayload): NormalizedQuote {
 }
 
 export async function POST(request: Request) {
-  const configuredToken = (env as unknown as Record<string, unknown>).INGEST_TOKEN;
-  const manualToken = (env as unknown as Record<string, unknown>).MANUAL_INGEST_TOKEN;
+  const configuredToken = runtimeValue("INGEST_TOKEN");
+  const manualToken = runtimeValue("MANUAL_INGEST_TOKEN");
   const suppliedToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const allowedTokens = [configuredToken, manualToken].filter((value): value is string => typeof value === "string" && value.length > 0);
   if (!suppliedToken || !allowedTokens.includes(suppliedToken)) {
@@ -113,7 +120,7 @@ export async function POST(request: Request) {
       const failed = Math.floor(amount(body.failed, "failed"));
       const status = succeeded === 0 ? "failed" : failed > 0 ? "partial" : "completed";
       const errorSummary = typeof body.errorSummary === "string" ? body.errorSummary.slice(0, 12_000) : null;
-      await env.DB.prepare(`
+      await execute(`
         INSERT INTO crawl_runs (id, started_at, completed_at, status, attempted, succeeded, failed, error_summary)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
@@ -124,7 +131,7 @@ export async function POST(request: Request) {
           succeeded = excluded.succeeded,
           failed = excluded.failed,
           error_summary = excluded.error_summary
-      `).bind(crawlRunId, startedAt, completedAt, status, attempted, succeeded, failed, errorSummary).run();
+      `, [crawlRunId, startedAt, completedAt, status, attempted, succeeded, failed, errorSummary]);
       return Response.json({ crawlRunId, status, stored: true }, { status: 201 });
     }
     if (body.kind === "quote-batch") {
@@ -151,44 +158,60 @@ export async function POST(request: Request) {
       const digest = hex(await crypto.subtle.digest("SHA-256", screenshot));
       const extension = mime === "image/jpeg" ? "jpg" : "png";
       const screenshotKey = `proof/${first.corridorSlug}/${first.crawlRunId}/shared-${digest.slice(0, 20)}.${extension}`;
-      const db = env.DB;
       const fresh: NormalizedQuote[] = [];
       for (const quote of quotes) {
-        const existing = await db.prepare(`
+        const existing = await queryOne<{ id: string }>(`
           SELECT id FROM quotes
           WHERE corridor_slug = ? AND provider_slug = ? AND captured_at = ?
           LIMIT 1
-        `).bind(quote.corridorSlug, quote.providerSlug, quote.capturedAt).first<{ id: string }>();
+        `, [quote.corridorSlug, quote.providerSlug, quote.capturedAt]);
         if (!existing) fresh.push(quote);
       }
       if (!fresh.length) {
         return Response.json({ stored: true, duplicate: true, received: quotes.length, inserted: 0 });
       }
 
-      await env.BUCKET.put(screenshotKey, screenshot, { httpMetadata: { contentType: mime, cacheControl: "public, max-age=31536000, immutable" } });
+      await putObject(screenshotKey, screenshot, { contentType: mime, cacheControl: "public, max-age=31536000, immutable" });
       const now = new Date().toISOString();
-      await db.batch([
-        db.prepare("INSERT OR IGNORE INTO corridors (slug, source_country, source_currency, destination_country, destination_currency, test_amount, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)").bind(first.corridorSlug, first.sourceCountry, first.sourceCurrency, first.destinationCountry, first.recipientCurrency, first.sourceAmount, now),
-        db.prepare("INSERT OR IGNORE INTO crawl_runs (id, started_at, status, attempted, succeeded, failed) VALUES (?, ?, 'running', 0, 0, 0)").bind(first.crawlRunId, first.capturedAt),
+      await batch([
+        {
+          sql: "INSERT INTO corridors (slug, source_country, source_currency, destination_country, destination_currency, test_amount, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING",
+          params: [first.corridorSlug, first.sourceCountry, first.sourceCurrency, first.destinationCountry, first.recipientCurrency, first.sourceAmount, now],
+        },
+        {
+          sql: "INSERT INTO crawl_runs (id, started_at, status, attempted, succeeded, failed) VALUES (?, ?, 'running', 0, 0, 0) ON CONFLICT(id) DO NOTHING",
+          params: [first.crawlRunId, first.capturedAt],
+        },
       ]);
       for (let index = 0; index < fresh.length; index += 4) {
         const chunk = fresh.slice(index, index + 4);
-        const statements = [];
+        const statements: SqlStatement[] = [];
         for (const quote of chunk) {
           statements.push(
-            db.prepare("INSERT OR IGNORE INTO providers (slug, name, homepage, enabled, created_at) VALUES (?, ?, ?, 1, ?)").bind(quote.providerSlug, quote.providerName, quote.providerHomepage, now),
-            db.prepare("UPDATE quotes SET status = ? WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'").bind(quote.previousStatus, quote.corridorSlug, quote.providerSlug),
-            db.prepare(`INSERT INTO quotes (
-              id, crawl_run_id, corridor_slug, provider_slug, provider_name, quote_type, status,
-              source_amount, source_currency, recipient_amount, recipient_currency, fee_amount, fee_currency,
-              exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
-              captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 'current', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-              .bind(quote.id, quote.crawlRunId, quote.corridorSlug, quote.providerSlug, quote.providerName, quote.quoteType, quote.sourceAmount, quote.sourceCurrency, quote.recipientAmount, quote.recipientCurrency, quote.feeAmount, quote.feeCurrency, quote.exchangeRate, quote.deliveryEstimate, quote.fundingMethod, quote.payoutMethod, quote.planName, quote.promotion, quote.capturedAt, quote.quoteUrl, screenshotKey, digest, quote.rawPayload, now),
+            {
+              sql: "INSERT INTO providers (slug, name, homepage, enabled, created_at) VALUES (?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING",
+              params: [quote.providerSlug, quote.providerName, quote.providerHomepage, now],
+            },
+            {
+              sql: "UPDATE quotes SET status = ? WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'",
+              params: [quote.previousStatus, quote.corridorSlug, quote.providerSlug],
+            },
+            {
+              sql: `INSERT INTO quotes (
+                id, crawl_run_id, corridor_slug, provider_slug, provider_name, quote_type, status,
+                source_amount, source_currency, recipient_amount, recipient_currency, fee_amount, fee_currency,
+                exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
+                captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, 'current', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              params: [quote.id, quote.crawlRunId, quote.corridorSlug, quote.providerSlug, quote.providerName, quote.quoteType, quote.sourceAmount, quote.sourceCurrency, quote.recipientAmount, quote.recipientCurrency, quote.feeAmount, quote.feeCurrency, quote.exchangeRate, quote.deliveryEstimate, quote.fundingMethod, quote.payoutMethod, quote.planName, quote.promotion, quote.capturedAt, quote.quoteUrl, screenshotKey, digest, quote.rawPayload, now],
+            },
           );
         }
-        statements.push(db.prepare("UPDATE crawl_runs SET attempted = attempted + ?, succeeded = succeeded + ? WHERE id = ?").bind(chunk.length, chunk.length, first.crawlRunId));
-        await db.batch(statements);
+        statements.push({
+          sql: "UPDATE crawl_runs SET attempted = attempted + ?, succeeded = succeeded + ? WHERE id = ?",
+          params: [chunk.length, chunk.length, first.crawlRunId],
+        });
+        await batch(statements);
       }
       return Response.json({ stored: true, received: quotes.length, inserted: fresh.length, screenshotSha256: digest }, { status: 201 });
     }
@@ -223,14 +246,12 @@ export async function POST(request: Request) {
     const screenshotKey = `proof/${corridorSlug}/${capturedAt.slice(0, 10)}/${id}.${extension}`;
     const now = new Date().toISOString();
     const previousStatus = body.invalidatesPreviousCurrent ? "invalid" : "stale";
-    const db = env.DB;
-
-    const existing = await db.prepare(`
+    const existing = await queryOne<{ id: string; screenshot_sha256: string }>(`
       SELECT id, screenshot_sha256
       FROM quotes
       WHERE corridor_slug = ? AND provider_slug = ? AND captured_at = ?
       LIMIT 1
-    `).bind(corridorSlug, providerSlug, capturedAt).first<{ id: string; screenshot_sha256: string }>();
+    `, [corridorSlug, providerSlug, capturedAt]);
 
     if (existing) {
       return Response.json({
@@ -241,20 +262,37 @@ export async function POST(request: Request) {
       });
     }
 
-    await env.BUCKET.put(screenshotKey, screenshot, { httpMetadata: { contentType: mime, cacheControl: "public, max-age=31536000, immutable" } });
-    await db.batch([
-      db.prepare("INSERT OR IGNORE INTO corridors (slug, source_country, source_currency, destination_country, destination_currency, test_amount, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)").bind(corridorSlug, sourceCountry, sourceCurrency, destinationCountry, recipientCurrency, sourceAmount, now),
-      db.prepare("INSERT OR IGNORE INTO providers (slug, name, homepage, enabled, created_at) VALUES (?, ?, ?, 1, ?)").bind(providerSlug, providerName, providerHomepage, now),
-      db.prepare("INSERT OR IGNORE INTO crawl_runs (id, started_at, status, attempted, succeeded, failed) VALUES (?, ?, 'running', 0, 0, 0)").bind(crawlRunId, capturedAt),
-      db.prepare("UPDATE quotes SET status = ? WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'").bind(previousStatus, corridorSlug, providerSlug),
-      db.prepare(`INSERT INTO quotes (
-        id, crawl_run_id, corridor_slug, provider_slug, provider_name, quote_type, status,
-        source_amount, source_currency, recipient_amount, recipient_currency, fee_amount, fee_currency,
-        exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
-        captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 'current', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(id, crawlRunId, corridorSlug, providerSlug, providerName, quoteType, sourceAmount, sourceCurrency, recipientAmount, recipientCurrency, feeAmount, feeCurrency, exchangeRate, body.deliveryEstimate ?? null, fundingMethod, payoutMethod, body.planName ?? null, body.promotion ? 1 : 0, capturedAt, quoteUrl, screenshotKey, digest, JSON.stringify(body.raw ?? {}), now),
-      db.prepare("UPDATE crawl_runs SET attempted = attempted + 1, succeeded = succeeded + 1 WHERE id = ?").bind(crawlRunId),
+    await putObject(screenshotKey, screenshot, { contentType: mime, cacheControl: "public, max-age=31536000, immutable" });
+    await batch([
+      {
+        sql: "INSERT INTO corridors (slug, source_country, source_currency, destination_country, destination_currency, test_amount, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING",
+        params: [corridorSlug, sourceCountry, sourceCurrency, destinationCountry, recipientCurrency, sourceAmount, now],
+      },
+      {
+        sql: "INSERT INTO providers (slug, name, homepage, enabled, created_at) VALUES (?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING",
+        params: [providerSlug, providerName, providerHomepage, now],
+      },
+      {
+        sql: "INSERT INTO crawl_runs (id, started_at, status, attempted, succeeded, failed) VALUES (?, ?, 'running', 0, 0, 0) ON CONFLICT(id) DO NOTHING",
+        params: [crawlRunId, capturedAt],
+      },
+      {
+        sql: "UPDATE quotes SET status = ? WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'",
+        params: [previousStatus, corridorSlug, providerSlug],
+      },
+      {
+        sql: `INSERT INTO quotes (
+          id, crawl_run_id, corridor_slug, provider_slug, provider_name, quote_type, status,
+          source_amount, source_currency, recipient_amount, recipient_currency, fee_amount, fee_currency,
+          exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
+          captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'current', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [id, crawlRunId, corridorSlug, providerSlug, providerName, quoteType, sourceAmount, sourceCurrency, recipientAmount, recipientCurrency, feeAmount, feeCurrency, exchangeRate, body.deliveryEstimate ?? null, fundingMethod, payoutMethod, body.planName ?? null, body.promotion ? 1 : 0, capturedAt, quoteUrl, screenshotKey, digest, JSON.stringify(body.raw ?? {}), now],
+      },
+      {
+        sql: "UPDATE crawl_runs SET attempted = attempted + 1, succeeded = succeeded + 1 WHERE id = ?",
+        params: [crawlRunId],
+      },
     ]);
 
     return Response.json({ id, screenshotSha256: digest, stored: true }, { status: 201 });

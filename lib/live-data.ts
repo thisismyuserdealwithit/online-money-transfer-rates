@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { query, queryOne } from "@/lib/platform-runtime";
 import type { Quote } from "@/lib/data";
 
 type D1Row = {
@@ -105,7 +105,7 @@ function asQuote(row: D1Row): Quote {
 
 export async function getLatestQuotes(corridorSlug: string): Promise<Quote[]> {
   try {
-    const result = await env.DB.prepare(`
+    const rows = await query<D1Row>(`
       SELECT q.* FROM quotes q
       INNER JOIN (
         SELECT provider_slug, MAX(captured_at) AS latest_capture
@@ -116,8 +116,8 @@ export async function getLatestQuotes(corridorSlug: string): Promise<Quote[]> {
       ON q.provider_slug = latest.provider_slug AND q.captured_at = latest.latest_capture
       WHERE q.corridor_slug = ?
       ORDER BY q.recipient_amount DESC
-    `).bind(corridorSlug, corridorSlug).all<D1Row>();
-    return result.results.map(asQuote);
+    `, [corridorSlug, corridorSlug]);
+    return rows.map(asQuote);
   } catch {
     return [];
   }
@@ -125,7 +125,7 @@ export async function getLatestQuotes(corridorSlug: string): Promise<Quote[]> {
 
 export async function getLiveProof(id: string) {
   try {
-    return await env.DB.prepare("SELECT * FROM quotes WHERE id = ? LIMIT 1").bind(id).first<Record<string, string | number | null>>();
+    return await queryOne<Record<string, string | number | null>>("SELECT * FROM quotes WHERE id = ? LIMIT 1", [id]);
   } catch {
     return null;
   }
@@ -133,13 +133,7 @@ export async function getLiveProof(id: string) {
 
 export async function getQuoteHistory(corridorSlug: string): Promise<HistoryQuote[]> {
   try {
-    const result = await env.DB.prepare(`
-      SELECT id, provider_slug, provider_name, quote_type, recipient_amount, recipient_currency, captured_at
-      FROM quotes
-      WHERE corridor_slug = ? AND status != 'invalid'
-      ORDER BY captured_at DESC, recipient_amount DESC
-      LIMIT 80
-    `).bind(corridorSlug).all<{
+    const rows = await query<{
       id: string;
       provider_slug: string;
       provider_name: string;
@@ -147,8 +141,14 @@ export async function getQuoteHistory(corridorSlug: string): Promise<HistoryQuot
       recipient_amount: number;
       recipient_currency: string;
       captured_at: string;
-    }>();
-    return result.results.map((row) => ({
+    }>(`
+      SELECT id, provider_slug, provider_name, quote_type, recipient_amount, recipient_currency, captured_at
+      FROM quotes
+      WHERE corridor_slug = ? AND status != 'invalid'
+      ORDER BY captured_at DESC, recipient_amount DESC
+      LIMIT 80
+    `, [corridorSlug]);
+    return rows.map((row) => ({
       id: row.id,
       provider: row.provider_name,
       providerSlug: row.provider_slug,
@@ -165,7 +165,13 @@ export async function getQuoteHistory(corridorSlug: string): Promise<HistoryQuot
 export async function getCoverageDashboard(): Promise<{ corridors: CorridorCoverage[]; runs: CrawlRunSummary[] }> {
   try {
     const [coverage, runs] = await Promise.all([
-      env.DB.prepare(`
+      query<{
+        corridor_slug: string;
+        provider_count: number;
+        verified_count: number;
+        indicative_count: number;
+        latest_captured_at: string | null;
+      }>(`
         WITH latest AS (
           SELECT corridor_slug, provider_slug, MAX(captured_at) AS latest_capture
           FROM quotes
@@ -185,19 +191,8 @@ export async function getCoverageDashboard(): Promise<{ corridors: CorridorCover
           AND q.captured_at = l.latest_capture
         GROUP BY q.corridor_slug
         ORDER BY q.corridor_slug
-      `).all<{
-        corridor_slug: string;
-        provider_count: number;
-        verified_count: number;
-        indicative_count: number;
-        latest_captured_at: string | null;
-      }>(),
-      env.DB.prepare(`
-        SELECT id, started_at, completed_at, status, attempted, succeeded, failed
-        FROM crawl_runs
-        ORDER BY started_at DESC
-        LIMIT 12
-      `).all<{
+      `),
+      query<{
         id: string;
         started_at: string;
         completed_at: string | null;
@@ -205,17 +200,22 @@ export async function getCoverageDashboard(): Promise<{ corridors: CorridorCover
         attempted: number;
         succeeded: number;
         failed: number;
-      }>(),
+      }>(`
+        SELECT id, started_at, completed_at, status, attempted, succeeded, failed
+        FROM crawl_runs
+        ORDER BY started_at DESC
+        LIMIT 12
+      `),
     ]);
     return {
-      corridors: coverage.results.map((row) => ({
+      corridors: coverage.map((row) => ({
         corridorSlug: row.corridor_slug,
         providerCount: Number(row.provider_count),
         verifiedCount: Number(row.verified_count),
         indicativeCount: Number(row.indicative_count),
         latestCapturedAt: row.latest_captured_at,
       })),
-      runs: runs.results.map((row) => ({
+      runs: runs.map((row) => ({
         id: row.id,
         startedAt: row.started_at,
         completedAt: row.completed_at,
@@ -232,7 +232,14 @@ export async function getCoverageDashboard(): Promise<{ corridors: CorridorCover
 
 export async function getProviderCoverage(): Promise<ProviderCoverage[]> {
   try {
-    const result = await env.DB.prepare(`
+    const rows = await query<{
+      provider_slug: string;
+      provider_name: string;
+      corridor_count: number;
+      verified_count: number;
+      indicative_count: number;
+      latest_captured_at: string | null;
+    }>(`
       WITH latest AS (
         SELECT corridor_slug, provider_slug, MAX(captured_at) AS latest_capture
         FROM quotes
@@ -253,15 +260,8 @@ export async function getProviderCoverage(): Promise<ProviderCoverage[]> {
         AND q.captured_at = l.latest_capture
       GROUP BY q.provider_slug, q.provider_name
       ORDER BY corridor_count DESC, q.provider_name
-    `).all<{
-      provider_slug: string;
-      provider_name: string;
-      corridor_count: number;
-      verified_count: number;
-      indicative_count: number;
-      latest_captured_at: string | null;
-    }>();
-    return result.results.map((row) => ({
+    `);
+    return rows.map((row) => ({
       providerSlug: row.provider_slug,
       providerName: row.provider_name,
       corridorCount: Number(row.corridor_count),
@@ -276,7 +276,25 @@ export async function getProviderCoverage(): Promise<ProviderCoverage[]> {
 
 export async function getProviderRateEvidence(providerSlug: string): Promise<ProviderRateEvidence[]> {
   try {
-    const result = await env.DB.prepare(`
+    const rows = await query<{
+      id: string;
+      corridor_slug: string;
+      source_amount: number;
+      source_currency: string;
+      recipient_amount: number;
+      recipient_currency: string;
+      fee_amount: number;
+      fee_currency: string;
+      exchange_rate: number;
+      quote_type: "verified" | "indicative";
+      captured_at: string;
+      delivery_estimate: string | null;
+      funding_method: string;
+      payout_method: string;
+      best_verified_recipient: number | null;
+      best_verified_provider: string | null;
+      matched_competitors: number;
+    }>(`
       WITH latest AS (
         SELECT corridor_slug, provider_slug, MAX(captured_at) AS latest_capture
         FROM quotes
@@ -341,26 +359,8 @@ export async function getProviderRateEvidence(providerSlug: string): Promise<Pro
         CASE WHEN p.quote_type = 'verified' THEN 0 ELSE 1 END,
         p.captured_at DESC,
         p.corridor_slug
-    `).bind(providerSlug).all<{
-      id: string;
-      corridor_slug: string;
-      source_amount: number;
-      source_currency: string;
-      recipient_amount: number;
-      recipient_currency: string;
-      fee_amount: number;
-      fee_currency: string;
-      exchange_rate: number;
-      quote_type: "verified" | "indicative";
-      captured_at: string;
-      delivery_estimate: string | null;
-      funding_method: string;
-      payout_method: string;
-      best_verified_recipient: number | null;
-      best_verified_provider: string | null;
-      matched_competitors: number;
-    }>();
-    return result.results.map((row) => ({
+    `, [providerSlug]);
+    return rows.map((row) => ({
       id: row.id,
       corridorSlug: row.corridor_slug,
       sourceAmount: Number(row.source_amount),

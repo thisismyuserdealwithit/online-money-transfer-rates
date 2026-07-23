@@ -1,17 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { corridorGroups, corridors } from "@/lib/data";
 
 export function CorridorFinder() {
-  const router = useRouter();
   const [slug, setSlug] = useState("uk-to-spain");
   const selected = corridors.find((corridor) => corridor.slug === slug) ?? corridors[0];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push(`/corridors/${slug}`);
+    window.location.assign(`/corridors/${slug}`);
   }
 
   return (
