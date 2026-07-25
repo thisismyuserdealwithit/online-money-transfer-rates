@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/methodology`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/coverage`, changeFrequency: "daily", priority: 0.8 },
     { url: `${base}/guides`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${base}/api`, changeFrequency: "monthly", priority: 0.7 },
     ...guides.map((guide) => ({ url: `${base}/guides/${guide.slug}`, changeFrequency: "monthly" as const, priority: 0.75 })),
     { url: `${base}/reviews`, changeFrequency: "daily", priority: 0.85 },
     ...providerReviews.map((review) => ({ url: `${base}/reviews/${review.slug}`, changeFrequency: "daily" as const, priority: 0.85 })),
@@ -23,6 +24,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/affiliate-disclosure`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${base}/cookie-policy`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/privacy`, changeFrequency: "yearly", priority: 0.2 },
-    ...corridors.map((corridor) => ({ url: `${base}/corridors/${corridor.slug}`, changeFrequency: "daily" as const, priority: 0.85 })),
+    ...corridors.map((corridor) => ({ url: `${base}/${corridor.slug}/`, changeFrequency: "daily" as const, priority: 0.85 })),
   ];
 }
