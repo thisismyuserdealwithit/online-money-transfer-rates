@@ -63,7 +63,7 @@ export function QuoteTable({ corridor, compact = false }: { corridor: Corridor; 
             <div className="rate-cell"><strong>{quote.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 })}</strong><small>Fee {money(quote.fee, corridor.fromCurrency)}</small></div>
             <div className="gets-cell"><strong>{money(quote.recipientGets, corridor.toCurrency)}</strong><small>{quote.status === "verified" ? "Completed bank-transfer quote" : quote.status === "stale" ? "Due another check" : "Calculator evidence only"}</small></div>
             <div className="proof-cell">
-              <Link href={`/proof/${quote.proofId}`} className={quote.status === "stale" ? "disabled-proof" : "proof-link"}>{quote.status === "stale" ? "Pending" : "Open receipt"}</Link>
+              <Link href={`/${corridor.slug}/receipts/${quote.proofId}/`} className={quote.status === "stale" ? "disabled-proof" : "proof-link"}>{quote.status === "stale" ? "Pending" : "Open receipt"}</Link>
               <small>{quote.checkedAt}</small>
             </div>
             {quote.note && <p className="quote-note">{quote.note}</p>}
