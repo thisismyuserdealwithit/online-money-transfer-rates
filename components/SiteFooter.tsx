@@ -10,8 +10,8 @@ export function SiteFooter() {
         </div>
         <div>
           <strong>Compare</strong>
-          <Link href="/corridors/uk-to-spain">UK to Spain</Link>
-          <Link href="/corridors/uk-to-united-states">UK to United States</Link>
+          <Link href="/uk-to-spain/">UK to Spain</Link>
+          <Link href="/uk-to-united-states/">UK to United States</Link>
           <Link href="/#corridors">All corridors</Link>
           <Link href="/reviews">Company reviews</Link>
           <Link href="/coverage">What we checked today</Link>
@@ -24,6 +24,7 @@ export function SiteFooter() {
           <Link href="/authors/alon-rajic">Alon Rajic</Link>
           <Link href="/authors/russell-gous">Russell Gous</Link>
           <Link href="/editorial-policy">Editorial policy</Link>
+          <Link href="/api">Free rates API</Link>
         </div>
         <div>
           <strong>Policies</strong>
