@@ -26,7 +26,7 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
       <>
         <SiteHeader />
         <main className="proof-page shell">
-          <div className="crumbs"><Link href={`/corridors/${corridor.slug}`}>← Return to the rate table</Link></div>
+          <div className="crumbs"><Link href={`/${corridor.slug}/`}>← Return to the rate table</Link></div>
           <div className="proof-layout">
             <section>
               <span className="kicker">THE STORED RECEIPT</span>
@@ -70,7 +70,7 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
     <>
       <SiteHeader />
       <main className="proof-page shell">
-          <div className="crumbs"><Link href={`/corridors/${corridor.slug}`}>← Return to the rate table</Link></div>
+          <div className="crumbs"><Link href={`/${corridor.slug}/`}>← Return to the rate table</Link></div>
         <div className="proof-layout">
           <section>
             <span className="kicker">THE STORED RECEIPT</span>
