@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const developmentPreviewMeta =
@@ -38,6 +39,50 @@ test("renders development preview metadata", async () => {
     /^text\/html\b/i,
   );
   assert.match(await response.text(), developmentPreviewMeta);
+});
+
+test("renders the free API documentation and exposes the public feed", async () => {
+  const worker = await loadWorker();
+  const pageResponse = await worker.fetch(
+    new Request("http://localhost/api", { headers: { accept: "text/html" } }),
+    bindings,
+    context,
+  );
+  assert.equal(pageResponse.status, 200);
+  const html = await pageResponse.text();
+  assert.match(html, /Use our money transfer rates on your own site/);
+  assert.match(html, /free for commercial and non-commercial websites/);
+  assert.match(html, /The link cannot be hidden in a footer/);
+  assert.match(html, /Rates supplied by Online Money Transfer/);
+  assert.match(html, /href="\/api"/);
+
+  const apiResponse = await worker.fetch(
+    new Request("http://localhost/api/v1/rates/uk-to-united-states?history=14"),
+    bindings,
+    context,
+  );
+  assert.equal(apiResponse.status, 200);
+  assert.equal(apiResponse.headers.get("access-control-allow-origin"), "*");
+  const payload = await apiResponse.json();
+  assert.equal(payload.apiVersion, "1.0");
+  assert.equal(payload.useTerms.price, "Free");
+  assert.equal(payload.useTerms.attributionRequired, true);
+  assert.equal(
+    payload.useTerms.requiredLink,
+    "https://onlinemoneytransfer.co.uk/uk-to-united-states/",
+  );
+
+  const corridorResponse = await worker.fetch(
+    new Request("http://localhost/uk-to-united-states", { headers: { accept: "text/html" } }),
+    bindings,
+    context,
+  );
+  assert.equal(corridorResponse.status, 200);
+
+  const widget = await readFile(new URL("../public/omt-rates.js", import.meta.url), "utf8");
+  assert.match(widget, /window\.OMTRates/);
+  assert.match(widget, /Rates supplied by Online Money Transfer/);
+  assert.match(widget, /data-older/);
 });
 
 test("renders the production coverage ledger", async () => {
