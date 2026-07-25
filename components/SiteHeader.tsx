@@ -14,6 +14,7 @@ export function SiteHeader() {
           <Link href="/reviews">Reviews</Link>
           <Link href="/research">Research</Link>
           <Link href="/guides">Guides</Link>
+          <Link href="/api">API</Link>
           <Link href="/methodology">Our method</Link>
           <Link href="/about">About</Link>
           <span className="live-pill"><i /> Checked daily</span>
