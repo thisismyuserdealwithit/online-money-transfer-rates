@@ -8,6 +8,8 @@ import { corridors, getCorridor, money, monitoredProviders } from "@/lib/data";
 import { getLatestQuotes, getQuoteHistory } from "@/lib/live-data";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return corridors.map((corridor) => ({ slug: corridor.slug }));
 }
@@ -18,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!corridor) return {};
   const title = `${corridor.fromCountry} to ${corridor.toCountry} Money Transfer Rates Today`;
   const description = `See what actually arrives when sending ${corridor.fromCurrency} to ${corridor.toCurrency}. Compare current fees, recipient amounts and dated provider proof.`;
-  return { title, description, alternates: { canonical: `/corridors/${slug}` }, openGraph: { title, description, type: "website" } };
+  return { title, description, alternates: { canonical: `/${slug}/` }, openGraph: { title, description, type: "website" } };
 }
 
 export default async function CorridorPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -64,7 +66,7 @@ export default async function CorridorPage({ params }: { params: Promise<{ slug:
                     <span>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(item.capturedAt))} UTC</span>
                     <strong>{item.provider} <small>{item.quoteType}</small></strong>
                     <b>{money(item.recipientAmount, item.recipientCurrency)}</b>
-                    <Link href={`/proof/${item.id}`}>View proof</Link>
+                    <Link href={`/${slug}/receipts/${item.id}/`}>View proof</Link>
                   </div>
                 ))}
               </div>
