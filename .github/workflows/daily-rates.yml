@@ -35,7 +35,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run crawl
         env:
-          INGEST_ENDPOINT: https://onlinemoneytransfer.co.uk/api/ingest
+          INGEST_ENDPOINT: https://online-money-transfer-rates-1.onrender.com/api/ingest
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           PROVIDER_FILTER: xe,atlanticmoney,instarem,ria,taptapsend,transfergo,singx,starling,natwestbusiness,lloydsbusiness,santanderuk,wisecomparison
           SUMMARY_ONLY: "1"
