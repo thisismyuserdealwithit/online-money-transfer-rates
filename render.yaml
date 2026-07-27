@@ -2,7 +2,7 @@ services:
   - type: web
     name: online-money-transfer-rates-1
     runtime: node
-    region: frankfurt
+    region: virginia
     plan: starter
     buildCommand: npm ci --include=dev && npm run render:build
     preDeployCommand: npm run db:migrate:render
@@ -31,7 +31,7 @@ databases:
   - name: omt-rates-db
     databaseName: omt_rates
     user: omt_rates_app
-    region: frankfurt
+    region: virginia
     plan: basic-256mb
     postgresMajorVersion: "18"
     ipAllowList: []
