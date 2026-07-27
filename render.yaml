@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: online-money-transfer-rates
+    name: online-money-transfer-rates-1
     runtime: node
     region: frankfurt
     plan: starter
