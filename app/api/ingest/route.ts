@@ -158,14 +158,24 @@ export async function POST(request: Request) {
       const digest = hex(await crypto.subtle.digest("SHA-256", screenshot));
       const extension = mime === "image/jpeg" ? "jpg" : "png";
       const screenshotKey = `proof/${first.corridorSlug}/${first.crawlRunId}/shared-${digest.slice(0, 20)}.${extension}`;
-      const fresh: NormalizedQuote[] = [];
+      const fresh: Array<{ quote: NormalizedQuote; becomesCurrent: boolean }> = [];
       for (const quote of quotes) {
         const existing = await queryOne<{ id: string }>(`
           SELECT id FROM quotes
           WHERE corridor_slug = ? AND provider_slug = ? AND captured_at = ?
           LIMIT 1
         `, [quote.corridorSlug, quote.providerSlug, quote.capturedAt]);
-        if (!existing) fresh.push(quote);
+        if (existing) continue;
+        const current = await queryOne<{ captured_at: string }>(`
+          SELECT captured_at FROM quotes
+          WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'
+          ORDER BY captured_at DESC
+          LIMIT 1
+        `, [quote.corridorSlug, quote.providerSlug]);
+        fresh.push({
+          quote,
+          becomesCurrent: !current || Date.parse(quote.capturedAt) > Date.parse(current.captured_at),
+        });
       }
       if (!fresh.length) {
         return Response.json({ stored: true, duplicate: true, received: quotes.length, inserted: 0 });
@@ -186,26 +196,26 @@ export async function POST(request: Request) {
       for (let index = 0; index < fresh.length; index += 4) {
         const chunk = fresh.slice(index, index + 4);
         const statements: SqlStatement[] = [];
-        for (const quote of chunk) {
-          statements.push(
-            {
-              sql: "INSERT INTO providers (slug, name, homepage, enabled, created_at) VALUES (?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING",
-              params: [quote.providerSlug, quote.providerName, quote.providerHomepage, now],
-            },
-            {
+        for (const { quote, becomesCurrent } of chunk) {
+          statements.push({
+            sql: "INSERT INTO providers (slug, name, homepage, enabled, created_at) VALUES (?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING",
+            params: [quote.providerSlug, quote.providerName, quote.providerHomepage, now],
+          });
+          if (becomesCurrent) {
+            statements.push({
               sql: "UPDATE quotes SET status = ? WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'",
               params: [quote.previousStatus, quote.corridorSlug, quote.providerSlug],
-            },
-            {
-              sql: `INSERT INTO quotes (
-                id, crawl_run_id, corridor_slug, provider_slug, provider_name, quote_type, status,
-                source_amount, source_currency, recipient_amount, recipient_currency, fee_amount, fee_currency,
-                exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
-                captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, 'current', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              params: [quote.id, quote.crawlRunId, quote.corridorSlug, quote.providerSlug, quote.providerName, quote.quoteType, quote.sourceAmount, quote.sourceCurrency, quote.recipientAmount, quote.recipientCurrency, quote.feeAmount, quote.feeCurrency, quote.exchangeRate, quote.deliveryEstimate, quote.fundingMethod, quote.payoutMethod, quote.planName, quote.promotion, quote.capturedAt, quote.quoteUrl, screenshotKey, digest, quote.rawPayload, now],
-            },
-          );
+            });
+          }
+          statements.push({
+            sql: `INSERT INTO quotes (
+              id, crawl_run_id, corridor_slug, provider_slug, provider_name, quote_type, status,
+              source_amount, source_currency, recipient_amount, recipient_currency, fee_amount, fee_currency,
+              exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
+              captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            params: [quote.id, quote.crawlRunId, quote.corridorSlug, quote.providerSlug, quote.providerName, quote.quoteType, becomesCurrent ? "current" : "stale", quote.sourceAmount, quote.sourceCurrency, quote.recipientAmount, quote.recipientCurrency, quote.feeAmount, quote.feeCurrency, quote.exchangeRate, quote.deliveryEstimate, quote.fundingMethod, quote.payoutMethod, quote.planName, quote.promotion, quote.capturedAt, quote.quoteUrl, screenshotKey, digest, quote.rawPayload, now],
+          });
         }
         statements.push({
           sql: "UPDATE crawl_runs SET attempted = attempted + ?, succeeded = succeeded + ? WHERE id = ?",
@@ -262,8 +272,16 @@ export async function POST(request: Request) {
       });
     }
 
+    const current = await queryOne<{ captured_at: string }>(`
+      SELECT captured_at FROM quotes
+      WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'
+      ORDER BY captured_at DESC
+      LIMIT 1
+    `, [corridorSlug, providerSlug]);
+    const becomesCurrent = !current || Date.parse(capturedAt) > Date.parse(current.captured_at);
+
     await putObject(screenshotKey, screenshot, { contentType: mime, cacheControl: "public, max-age=31536000, immutable" });
-    await batch([
+    const statements: SqlStatement[] = [
       {
         sql: "INSERT INTO corridors (slug, source_country, source_currency, destination_country, destination_currency, test_amount, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING",
         params: [corridorSlug, sourceCountry, sourceCurrency, destinationCountry, recipientCurrency, sourceAmount, now],
@@ -276,24 +294,29 @@ export async function POST(request: Request) {
         sql: "INSERT INTO crawl_runs (id, started_at, status, attempted, succeeded, failed) VALUES (?, ?, 'running', 0, 0, 0) ON CONFLICT(id) DO NOTHING",
         params: [crawlRunId, capturedAt],
       },
-      {
+    ];
+    if (becomesCurrent) {
+      statements.push({
         sql: "UPDATE quotes SET status = ? WHERE corridor_slug = ? AND provider_slug = ? AND status = 'current'",
         params: [previousStatus, corridorSlug, providerSlug],
-      },
+      });
+    }
+    statements.push(
       {
         sql: `INSERT INTO quotes (
           id, crawl_run_id, corridor_slug, provider_slug, provider_name, quote_type, status,
           source_amount, source_currency, recipient_amount, recipient_currency, fee_amount, fee_currency,
           exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
           captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'current', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        params: [id, crawlRunId, corridorSlug, providerSlug, providerName, quoteType, sourceAmount, sourceCurrency, recipientAmount, recipientCurrency, feeAmount, feeCurrency, exchangeRate, body.deliveryEstimate ?? null, fundingMethod, payoutMethod, body.planName ?? null, body.promotion ? 1 : 0, capturedAt, quoteUrl, screenshotKey, digest, JSON.stringify(body.raw ?? {}), now],
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [id, crawlRunId, corridorSlug, providerSlug, providerName, quoteType, becomesCurrent ? "current" : "stale", sourceAmount, sourceCurrency, recipientAmount, recipientCurrency, feeAmount, feeCurrency, exchangeRate, body.deliveryEstimate ?? null, fundingMethod, payoutMethod, body.planName ?? null, body.promotion ? 1 : 0, capturedAt, quoteUrl, screenshotKey, digest, JSON.stringify(body.raw ?? {}), now],
       },
       {
         sql: "UPDATE crawl_runs SET attempted = attempted + 1, succeeded = succeeded + 1 WHERE id = ?",
         params: [crawlRunId],
       },
-    ]);
+    );
+    await batch(statements);
 
     return Response.json({ id, screenshotSha256: digest, stored: true }, { status: 201 });
   } catch (error) {
