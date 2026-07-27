@@ -23,12 +23,19 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: crawler/package-lock.json
+      - name: Check ingestion token
+        env:
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+        run: |
+          if [ -z "$INGEST_TOKEN" ]; then
+            echo "::error::GitHub Actions secret INGEST_TOKEN is missing"
+            exit 1
+          fi
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run crawl
         env:
-          INGEST_ENDPOINT: ${{ secrets.INGEST_ENDPOINT }}
+          INGEST_ENDPOINT: https://onlinemoneytransfer.co.uk/api/ingest
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
-          SITES_BYPASS_TOKEN: ${{ secrets.SITES_BYPASS_TOKEN }}
           PROVIDER_FILTER: xe,atlanticmoney,instarem,ria,taptapsend,transfergo,singx,starling,natwestbusiness,lloydsbusiness,santanderuk,wisecomparison
           SUMMARY_ONLY: "1"
