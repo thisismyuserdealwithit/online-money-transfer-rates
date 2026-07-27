@@ -8,10 +8,10 @@
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
-    "build": "bash scripts/build-verified.sh",
-    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
+    "build": "if [ \"$RENDER\" = \"true\" ]; then npm run render:build; else bash scripts/build-verified.sh; fi",
+    "start": "if [ \"$RENDER\" = \"true\" ]; then npm run render:start; else WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start; fi",
     "render:build": "next build --webpack",
-    "render:start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
+    "render:start": "npm run db:migrate:render && next start -H 0.0.0.0 -p ${PORT:-3000}",
     "db:migrate:render": "node scripts/migrate-postgres.mjs",
     "test:render-schema": "node --test tests/render-postgres.test.mjs",
     "test": "npm run build && node --experimental-loader ./scripts/cloudflare-node-loader.mjs --test tests/rendered-html.test.mjs",
