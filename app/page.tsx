@@ -7,6 +7,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { corridorGroups, corridors, money } from "@/lib/data";
 import { getLatestQuotes } from "@/lib/live-data";
 
+export const dynamic = "force-dynamic";
+
 function CorridorGrid({ items }: { items: typeof corridors }) {
   return (
     <div className="corridor-grid">
