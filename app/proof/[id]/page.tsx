@@ -1,9 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridors } from "@/lib/data";
 import { getLiveProof } from "@/lib/live-data";
+import { pageMetadata } from "@/lib/seo";
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Metadata> {
+  const { id } = await params;
+  return pageMetadata({
+    title: "Stored Money Transfer Rate Receipt",
+    description:
+      "The dated provider screen and recorded figures behind an Online Money Transfer rate.",
+    path: `/proof/${encodeURIComponent(id)}`,
+    noIndex: true,
+  });
+}
 
 export default async function ProofPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

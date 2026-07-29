@@ -4,12 +4,13 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridors } from "@/lib/data";
 import { getCoverageDashboard } from "@/lib/live-data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Today's Money Transfer Rate Checks and Provider Evidence",
   description: "See which transfer routes have current provider evidence, how many quotes completed and when the latest receipt was stored.",
-  alternates: { canonical: "/coverage" },
-};
+  path: "/coverage",
+});
 
 function checkedLabel(value: string | null) {
   if (!value) return "No successful capture";
@@ -49,7 +50,7 @@ export default async function CoveragePage() {
               const row = bySlug.get(corridor.slug);
               const count = row?.providerCount ?? 0;
               return (
-                <Link className={`coverage-row ${count ? "has-data" : "no-data"}`} href={`/corridors/${corridor.slug}`} key={corridor.slug}>
+                <Link className={`coverage-row ${count ? "has-data" : "no-data"}`} href={`/${corridor.slug}/`} key={corridor.slug}>
                   <span><strong>{corridor.fromCountry} → {corridor.toCountry}</strong><small>{corridor.fromCurrency} to {corridor.toCurrency}</small></span>
                   <b>{count || "Pending"}</b>
                   <span><strong>{row?.verifiedCount ?? 0} verified</strong><small>{row?.indicativeCount ?? 0} indicative</small></span>

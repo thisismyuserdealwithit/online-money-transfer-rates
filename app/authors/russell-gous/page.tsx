@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Russell Gous, Head of Content", description: "Russell Gous is head of content for Online Money Transfer, with experience at Barclays Corporate Banking and WorldFirst.", alternates: { canonical: "/authors/russell-gous" } };
+export const metadata: Metadata = pageMetadata({
+  title: "Russell Gous, Head of Content",
+  description: "Russell Gous is head of content for Online Money Transfer, with experience at Barclays Corporate Banking and WorldFirst.",
+  path: "/authors/russell-gous",
+});
 
 export default function RussellGousPage() {
   const person = { "@context": "https://schema.org", "@type": "Person", name: "Russell Gous", jobTitle: "Head of Content", worksFor: { "@type": "Organization", name: "Finofin Limited", url: "https://finofin.com" }, url: "https://onlinemoneytransfer.co.uk/authors/russell-gous" };

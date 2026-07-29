@@ -3,12 +3,13 @@ import Link from "next/link";
 import { AuthorPanel } from "@/components/AuthorPanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Who Runs Online Money Transfer?",
   description: "Meet Finofin Limited and the people responsible for the rates, reviews and research published on OnlineMoneyTransfer.co.uk.",
-  alternates: { canonical: "/about" },
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   const organisation = {

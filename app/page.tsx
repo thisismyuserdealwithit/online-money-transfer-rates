@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { CorridorFinder } from "@/components/CorridorFinder";
 import { CompanyTrust } from "@/components/CompanyTrust";
 import { QuoteTable } from "@/components/QuoteTable";
@@ -6,14 +7,21 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridorGroups, corridors, money } from "@/lib/data";
 import { getLatestQuotes } from "@/lib/live-data";
+import { defaultDescription, pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = pageMetadata({
+  title: "Online Money Transfer | Today's Rates and Receipts",
+  description: defaultDescription,
+  path: "/",
+  absoluteTitle: true,
+});
 
 function CorridorGrid({ items }: { items: typeof corridors }) {
   return (
     <div className="corridor-grid">
       {items.map((corridor) => (
-        <Link href={`/corridors/${corridor.slug}`} key={corridor.slug}>
+        <Link href={`/${corridor.slug}/`} key={corridor.slug}>
           <span className="country-pair"><i>{corridor.fromCode}</i><i>{corridor.toCode}</i></span>
           <span><strong>{corridor.fromCountry} to {corridor.toCountry}</strong><small>{corridor.fromCurrency} → {corridor.toCurrency}</small></span>
           <b>→</b>
@@ -56,7 +64,7 @@ export default async function Home() {
         <section className="trust-strip"><div className="shell"><span>A fairer way to compare the quote</span><strong>Same amount</strong><i /> <strong>Same payment route</strong><i /> <strong>Short checking window</strong><i /> <strong>Proof kept</strong></div></section>
 
         <section className="section shell" id="corridors">
-          <div className="section-heading"><div><span className="kicker">LATEST CHECK</span><h2>What {money(sourceAmount, featured.fromCurrency)} buys in Spain today</h2><p>A completed transfer quote can win. A currency converter cannot.</p></div><Link href={`/corridors/${featured.slug}`}>See every provider and receipt →</Link></div>
+          <div className="section-heading"><div><span className="kicker">LATEST CHECK</span><h2>What {money(sourceAmount, featured.fromCurrency)} buys in Spain today</h2><p>A completed transfer quote can win. A currency converter cannot.</p></div><Link href={`/${featured.slug}/`}>See every provider and receipt →</Link></div>
           <QuoteTable corridor={featured} compact />
           <p className="data-caveat">Every published figure has a stored capture behind it. We show indicative rates, but they stay out of the cheapest-rate claim.</p>
         </section>

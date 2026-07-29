@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Editorial Policy and Corrections", description: "Who is responsible for Online Money Transfer, how changing claims are checked and what happens when a published record is wrong.", alternates: { canonical: "/editorial-policy" } };
+export const metadata: Metadata = pageMetadata({
+  title: "Editorial Policy and Corrections",
+  description: "Who is responsible for Online Money Transfer, how changing claims are checked and what happens when a published record is wrong.",
+  path: "/editorial-policy",
+});
 
 export default function EditorialPolicyPage() {
   return <><SiteHeader /><main><section className="method-hero"><div className="shell narrow"><span className="kicker">EDITORIAL POLICY</span><h1>Claims move. Responsibility stays put.</h1><p>Every substantial guide has a named writer and reviewer. A changing product claim needs a source or a dated test, and a rate needs the receipt that produced it.</p></div></section><article className="legal-page shell narrow">

@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import { AuthorPanel } from "@/components/AuthorPanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  title: "How We Compare Money Transfer Rates",
+  description:
+    "See how Online Money Transfer checks provider rates, separates verified quotes from indicative evidence and preserves every dated receipt.",
+  path: "/methodology",
+});
 
 export default function MethodologyPage() {
   return (

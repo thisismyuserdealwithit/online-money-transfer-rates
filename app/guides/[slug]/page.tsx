@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getCorridor, money } from "@/lib/data";
 import { getGuide, guideWordCount, guides } from "@/lib/guides";
 import { getLatestQuotes } from "@/lib/live-data";
+import { pageMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return guides.map((guide) => ({ slug: guide.slug }));
@@ -16,19 +17,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const guide = getGuide(slug);
   if (!guide) return {};
 
-  return {
+  return pageMetadata({
     title: guide.title,
     description: guide.description,
-    alternates: { canonical: `/guides/${guide.slug}` },
-    openGraph: {
-      title: guide.title,
-      description: guide.description,
-      type: "article",
-      publishedTime: "2026-07-22",
-      modifiedTime: "2026-07-23",
-      authors: ["Russell Gous"],
-    },
-  };
+    path: `/guides/${guide.slug}`,
+    type: "article",
+    publishedTime: "2026-07-22",
+    modifiedTime: "2026-07-29",
+    authors: ["Russell Gous"],
+  });
 }
 
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -143,7 +140,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                       ) : (
                         <p className="guide-live-pending">No completed public quote is current right now. The route remains open, including the providers that failed, until the next usable receipt arrives.</p>
                       )}
-                      <Link className="guide-live-open" href={`/corridors/${corridor.slug}`}>See the full rate check →</Link>
+                      <Link className="guide-live-open" href={`/${corridor.slug}/`}>See the full rate check →</Link>
                     </section>
                   ))}
                 </div>

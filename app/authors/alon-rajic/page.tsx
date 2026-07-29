@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Alon Rajic, Publisher and Research Lead", description: "Alon Rajic is the publisher and research lead behind Online Money Transfer and managing director of Finofin Limited.", alternates: { canonical: "/authors/alon-rajic" } };
+export const metadata: Metadata = pageMetadata({
+  title: "Alon Rajic, Publisher and Research Lead",
+  description: "Alon Rajic is the publisher and research lead behind Online Money Transfer and managing director of Finofin Limited.",
+  path: "/authors/alon-rajic",
+});
 
 export default function AlonRajicPage() {
   const person = { "@context": "https://schema.org", "@type": "Person", name: "Alon Rajic", jobTitle: "Managing Director", worksFor: { "@type": "Organization", name: "Finofin Limited", url: "https://finofin.com" }, url: "https://onlinemoneytransfer.co.uk/authors/alon-rajic" };

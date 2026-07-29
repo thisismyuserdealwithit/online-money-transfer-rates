@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Free Money Transfer Rates API",
   description: "Add current OMT corridor rates, stored comparisons and receipt links to another website with a free JSON API or JavaScript widget.",
-  alternates: { canonical: "/api" },
-};
+  path: "/api",
+});
 
 const widgetCode = `<div id="omt-rates"></div>
 <script

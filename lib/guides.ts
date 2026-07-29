@@ -348,7 +348,7 @@ export const guides: Guide[] = [
       items: [
         { eyebrow: "Provider quotes", title: "Compare currency brokers by name", description: "See which firms are dealer-led, which publish rates and which offer forward contracts.", href: "/guides/what-are-currency-brokers" },
         { eyebrow: "Hedge", title: "Read the forward contract worked example", description: "See what happens to a €200,000 purchase when the pound rises, falls or the deal collapses.", href: "/guides/forward-contracts" },
-        { eyebrow: "Current price", title: "Open UK to Spain", description: "Check today's public GBP to EUR provider evidence before asking a broker for a large-transfer quote.", href: "/corridors/uk-to-spain" }
+        { eyebrow: "Current price", title: "Open UK to Spain", description: "Check today's public GBP to EUR provider evidence before asking a broker for a large-transfer quote.", href: "/uk-to-spain/" }
       ]
     },
     sources: [
@@ -423,7 +423,7 @@ export const guides: Guide[] = [
       items: [
         { eyebrow: "Decision", title: "Should you hedge or wait?", description: "Use the €300,000 rate table to decide how much of the payment your budget can leave exposed.", href: "/guides/should-you-time-a-currency-transfer" },
         { eyebrow: "Provider", title: "Compare five UK-facing brokers", description: "See service models, regulatory entities, live-rate visibility and the current Halo warning.", href: "/guides/what-are-currency-brokers" },
-        { eyebrow: "Spot benchmark", title: "Open UK to Spain rates", description: "Use the current public GBP to EUR quotes as a reference before requesting dealer prices.", href: "/corridors/uk-to-spain" }
+        { eyebrow: "Spot benchmark", title: "Open UK to Spain rates", description: "Use the current public GBP to EUR quotes as a reference before requesting dealer prices.", href: "/uk-to-spain/" }
       ]
     },
     sources: [

@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Affiliate Disclosure", description: "How Online Money Transfer may earn money and why commercial relationships do not change rate evidence.", alternates: { canonical: "/affiliate-disclosure" } };
+export const metadata: Metadata = pageMetadata({
+  title: "Affiliate Disclosure",
+  description: "How Online Money Transfer may earn money and why commercial relationships do not change rate evidence.",
+  path: "/affiliate-disclosure",
+});
 
 export default function AffiliateDisclosurePage() {
   return <><SiteHeader /><main><section className="method-hero"><div className="shell narrow"><span className="kicker">AFFILIATE DISCLOSURE</span><h1>Some clicks pay us. They do not improve a rate.</h1><p>A provider may pay commission after a visit or completed transfer. Using the link should not increase the customer&apos;s price.</p></div></section><article className="legal-page shell narrow">

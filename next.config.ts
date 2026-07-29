@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  experimental: {
+    cpus: 2,
+  },
   webpack(config, { webpack }) {
     const renderAdapter = path.join(root, "lib/platform-render.ts");
     config.resolve.alias["@/lib/platform-runtime"] = renderAdapter;

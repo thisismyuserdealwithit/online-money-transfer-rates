@@ -1,8 +1,20 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/go/"] },
-    sitemap: "https://onlinemoneytransfer.co.uk/sitemap.xml",
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [
+        "/api/",
+        "/go/",
+        "/proof/",
+        "/*/receipts/",
+        "/corridors/",
+      ],
+    },
+    sitemap: `${siteUrl}/sitemap.xml`,
+    host: siteUrl,
   };
 }

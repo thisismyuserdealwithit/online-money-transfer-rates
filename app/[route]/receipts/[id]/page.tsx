@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import ProofPage from "@/app/proof/[id]/page";
 import { getCorridor } from "@/lib/data";
 import { getLiveProof } from "@/lib/live-data";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata(
   { params }: { params: Promise<{ route: string; id: string }> },
@@ -10,12 +11,12 @@ export async function generateMetadata(
   const { route, id } = await params;
   const corridor = getCorridor(route);
   if (!corridor) return {};
-  return {
+  return pageMetadata({
     title: `Stored rate receipt: ${corridor.fromCountry} to ${corridor.toCountry}`,
     description: "The dated provider evidence behind an Online Money Transfer rate.",
-    alternates: { canonical: `/${route}/receipts/${encodeURIComponent(id)}/` },
-    robots: { index: false, follow: true },
-  };
+    path: `/${route}/receipts/${encodeURIComponent(id)}/`,
+    noIndex: true,
+  });
 }
 
 export default async function CorridorReceiptPage(

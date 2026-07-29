@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getCorridor, money } from "@/lib/data";
 import { getProviderRateEvidence } from "@/lib/live-data";
 import { getProviderReview, providerReviews, reviewsUpdated } from "@/lib/reviews";
+import { pageMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return providerReviews.map((review) => ({ slug: review.slug }));
@@ -15,18 +16,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const review = getProviderReview(slug);
   if (!review) return {};
-  return {
+  return pageMetadata({
     title: `${review.name} Review: Exchange Rates and Fees`,
     description: `${review.name} rate review using current corridor evidence, visible fees and the amount delivered. Compare the service directly with competing transfer providers.`,
-    alternates: { canonical: `/reviews/${review.slug}` },
-    openGraph: {
-      title: `${review.name} rate review and live evidence`,
-      description: review.verdict,
-      type: "article",
-      modifiedTime: "2026-07-23",
-      authors: ["Russell Gous", "Alon Rajic"],
-    },
-  };
+    path: `/reviews/${review.slug}`,
+    type: "article",
+    modifiedTime: "2026-07-29",
+    authors: ["Russell Gous", "Alon Rajic"],
+    socialTitle: `${review.name} rate review and live evidence`,
+    socialDescription: review.verdict,
+  });
 }
 
 function capturedLabel(value: string) {
@@ -152,7 +151,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
                           : null;
                         return (
                           <tr key={item.id}>
-                            <th scope="row"><Link href={`/corridors/${item.corridorSlug}`}>{corridor ? `${corridor.fromCountry} → ${corridor.toCountry}` : item.corridorSlug}</Link><small>{item.fundingMethod} · {item.payoutMethod}</small></th>
+                            <th scope="row"><Link href={`/${item.corridorSlug}/`}>{corridor ? `${corridor.fromCountry} → ${corridor.toCountry}` : item.corridorSlug}</Link><small>{item.fundingMethod} · {item.payoutMethod}</small></th>
                             <td>{money(item.sourceAmount, item.sourceCurrency)}</td>
                             <td>{money(item.feeAmount, item.feeCurrency)}</td>
                             <td><strong>{money(item.recipientAmount, item.recipientCurrency)}</strong><small>Rate {item.exchangeRate.toLocaleString("en-GB", { maximumFractionDigits: 6 })}</small></td>

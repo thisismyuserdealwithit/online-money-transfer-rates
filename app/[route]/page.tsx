@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import CorridorPage, {
+import {
   generateStaticParams as corridorStaticParams,
+  renderCorridorPage,
 } from "@/app/corridors/[slug]/page";
 import { getCorridor } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -18,17 +20,16 @@ export async function generateMetadata(
   if (!corridor) return {};
   const title = `${corridor.fromCountry} to ${corridor.toCountry} Money Transfer Rates Today`;
   const description = `Compare current ${corridor.fromCurrency} to ${corridor.toCurrency} transfer rates, fees, recipient amounts and dated provider receipts.`;
-  return {
+  return pageMetadata({
     title,
     description,
-    alternates: { canonical: `/${route}/` },
-    openGraph: { title, description, type: "website" },
-  };
+    path: `/${route}/`,
+  });
 }
 
 export default async function PublicCorridorPage(
   { params }: { params: Promise<{ route: string }> },
 ) {
   const { route } = await params;
-  return CorridorPage({ params: Promise.resolve({ slug: route }) });
+  return renderCorridorPage(route);
 }

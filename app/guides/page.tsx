@@ -4,8 +4,13 @@ import { AuthorPanel } from "@/components/AuthorPanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { guideWordCount, guides } from "@/lib/guides";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "UK Money Transfer Guides: Rates, Brokers and Payment Routes", description: "Plain-English UK guides to exchange rates, currency brokers and the payment infrastructure beneath Wise, Revolut and other transfer companies.", alternates: { canonical: "/guides" } };
+export const metadata: Metadata = pageMetadata({
+  title: "UK Money Transfer Guides: Rates, Brokers and Payment Routes",
+  description: "Plain-English UK guides to exchange rates, currency brokers and the payment infrastructure beneath Wise, Revolut and other transfer companies.",
+  path: "/guides",
+});
 
 export default function GuidesPage() {
   const consumerGuides = guides.filter((guide) => !guide.series);

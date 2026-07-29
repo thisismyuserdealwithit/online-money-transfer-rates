@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Privacy Policy", description: "How Finofin Limited handles technical and affiliate link data on OnlineMoneyTransfer.co.uk.", alternates: { canonical: "/privacy" } };
+export const metadata: Metadata = pageMetadata({
+  title: "Privacy Policy",
+  description: "How Finofin Limited handles technical and affiliate link data on OnlineMoneyTransfer.co.uk.",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return <><SiteHeader /><main><section className="method-hero"><div className="shell narrow"><span className="kicker">PRIVACY</span><h1>You can compare rates without opening an account</h1><p>Finofin Limited is responsible for this site. Reading the tables does not require a name, email address or transfer history.</p></div></section><article className="legal-page shell narrow">

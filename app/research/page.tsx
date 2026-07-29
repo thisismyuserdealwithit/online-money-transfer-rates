@@ -3,12 +3,13 @@ import Link from "next/link";
 import { AuthorPanel } from "@/components/AuthorPanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "UK Money Transfer Research: Who Pays More and Why",
   description: "Original UK money transfer research using provider rate evidence and World Bank data to show where costs rise and who has fewer practical choices.",
-  alternates: { canonical: "/research" },
-};
+  path: "/research",
+});
 
 export default function ResearchPage() {
   return (

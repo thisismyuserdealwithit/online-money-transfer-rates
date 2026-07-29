@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Cookie Policy", description: "The essential and optional cookies used by Online Money Transfer.", alternates: { canonical: "/cookie-policy" } };
+export const metadata: Metadata = pageMetadata({
+  title: "Cookie Policy",
+  description: "The essential and optional cookies used by Online Money Transfer.",
+  path: "/cookie-policy",
+});
 
 export default function CookiePolicyPage() {
   return <><SiteHeader /><main><section className="method-hero"><div className="shell narrow"><span className="kicker">COOKIE POLICY</span><h1>Two cookies, and neither follows you around the web</h1><p>One cookie remembers your choice. The optional one measures provider-link use after consent, without creating an advertising profile.</p></div></section><article className="legal-page shell narrow">

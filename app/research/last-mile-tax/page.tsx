@@ -5,17 +5,19 @@ import { AuthorPanel } from "@/components/AuthorPanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import study from "@/lib/last-mile-data.json";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "The Cost of Cash Remittances: £122.76 a Year on Monthly UK Transfers",
   description: "A UK worker sending £200 each month pays £122.76 a year in average cash-transfer costs. See the matched cash penalties and what creates them.",
-  alternates: { canonical: "/research/last-mile-tax" },
-  openGraph: {
-    title: "The Last Mile Tax: Why Cash Collection Costs More",
-    description: "Our study of 791 UK remittance services puts the cash premium into pounds and working hours.",
-    type: "article",
-  },
-};
+  path: "/research/last-mile-tax",
+  type: "article",
+  publishedTime: "2026-07-22",
+  modifiedTime: "2026-07-29",
+  authors: ["Alon Rajic", "Russell Gous"],
+  socialTitle: "The Last Mile Tax: Why Cash Collection Costs More",
+  socialDescription: "Our study of 791 UK remittance services puts the cash premium into pounds and working hours.",
+});
 
 const sources = {
   prices: "https://datacatalog.worldbank.org/search/dataset/0037898/remittance-prices-worldwide",
@@ -111,7 +113,7 @@ export default function LastMileTaxPage() {
                   <h1>Need the £200 in cash? The transfer costs about <em>{money(study.fixedEffectModel.cashPremiumGbp200)} more</em></h1>
                   <p>Across 791 UK services, recipients without a usable account had fewer practical choices. Cash was usually the answer, and it came with a higher bill even after we allowed for harder routes.</p>
                   <div className="report-actions">
-                    <a href="/api/research/last-mile-tax/csv">Download the 33-country file</a>
+                    <Link href="/api/research/last-mile-tax/csv">Download the 33-country file</Link>
                     <a href="#salary-hit">Put the cost against UK pay</a>
                     <a href="#method">Check our calculation</a>
                   </div>
@@ -245,7 +247,7 @@ export default function LastMileTaxPage() {
 
           <section className="section payout-method-section">
             <div className="shell">
-              <div className="section-heading"><div><span className="kicker">THE DELIVERY METHOD</span><h2>Cash is the costliest observed final mile</h2><p>These are descriptive averages across the complete UK service panel, normalised to £200. They are not controlled comparisons.</p></div><a href="/api/research/last-mile-tax">Open JSON →</a></div>
+              <div className="section-heading"><div><span className="kicker">THE DELIVERY METHOD</span><h2>Cash is the costliest observed final mile</h2><p>These are descriptive averages across the complete UK service panel, normalised to £200. They are not controlled comparisons.</p></div><Link href="/api/research/last-mile-tax">Open JSON →</Link></div>
               <div className="payout-cost-chart">
                 {study.payoutMethods.map((row) => (
                   <div className={`payout-cost-row payout-${row.method.toLowerCase().replaceAll(" ", "-")}`} key={row.method}>
@@ -264,7 +266,7 @@ export default function LastMileTaxPage() {
           </section>
 
           <section className="section shell report-section">
-            <div className="section-heading"><div><span className="kicker">THE TEN BIGGEST CASH PENALTIES</span><h2>What an extra cash charge looks like on a real £200 transfer</h2><p>These are the ten largest gaps among 17 like for like comparisons. In each one, the provider, destination, payment method, speed, date and network coverage are the same. Only the way the recipient gets the money changes.</p></div><a href="/api/research/last-mile-tax/matched-offers/csv">Download all 17 comparisons →</a></div>
+            <div className="section-heading"><div><span className="kicker">THE TEN BIGGEST CASH PENALTIES</span><h2>What an extra cash charge looks like on a real £200 transfer</h2><p>These are the ten largest gaps among 17 like for like comparisons. In each one, the provider, destination, payment method, speed, date and network coverage are the same. Only the way the recipient gets the money changes.</p></div><Link href="/api/research/last-mile-tax/matched-offers/csv">Download all 17 comparisons →</Link></div>
 
             <div className="top-ten-scoreboard">
               <div><strong>10</strong><span>largest matched penalties</span></div>
@@ -368,7 +370,7 @@ export default function LastMileTaxPage() {
           </section>
 
           <section className="section shell report-section">
-            <div className="section-heading"><div><span className="kicker">ALL 33 DESTINATIONS</span><h2>The complete access and cost panel</h2><p>Rows are ordered by cash service share. Missing values remain missing. We do not fill them with regional averages.</p></div><a href="/api/research/last-mile-tax/csv">Download CSV →</a></div>
+            <div className="section-heading"><div><span className="kicker">ALL 33 DESTINATIONS</span><h2>The complete access and cost panel</h2><p>Rows are ordered by cash service share. Missing values remain missing. We do not fill them with regional averages.</p></div><Link href="/api/research/last-mile-tax/csv">Download CSV →</Link></div>
             <div className="index-table-wrap">
               <table className="index-table access-context-table">
                 <thead><tr><th>Destination</th><th>Estimated cost per £200</th><th>Cash services</th><th>Unbanked adults</th><th>Control of corruption</th><th>Internet use</th><th>ATMs / 100k</th><th>Branches / 100k</th><th>GDP per person</th></tr></thead>

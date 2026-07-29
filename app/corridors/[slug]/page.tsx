@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { QuoteTable } from "@/components/QuoteTable";
 import { AuthorPanel } from "@/components/AuthorPanel";
@@ -20,11 +20,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!corridor) return {};
   const title = `${corridor.fromCountry} to ${corridor.toCountry} Money Transfer Rates Today`;
   const description = `See what actually arrives when sending ${corridor.fromCurrency} to ${corridor.toCurrency}. Compare current fees, recipient amounts and dated provider proof.`;
-  return { title, description, alternates: { canonical: `/${slug}/` }, openGraph: { title, description, type: "website" } };
+  return {
+    title,
+    description,
+    alternates: { canonical: `/${slug}/` },
+    robots: { index: false, follow: true },
+  };
 }
 
-export default async function CorridorPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function CorridorAliasPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  if (!getCorridor(slug)) notFound();
+  permanentRedirect(`/${slug}/`);
+}
+
+export async function renderCorridorPage(slug: string) {
   const baseCorridor = getCorridor(slug);
   if (!baseCorridor) notFound();
   const [liveQuotes, history] = await Promise.all([getLatestQuotes(slug), getQuoteHistory(slug)]);
