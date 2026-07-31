@@ -2,6 +2,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { QuoteTable } from "@/components/QuoteTable";
 import { AuthorPanel } from "@/components/AuthorPanel";
+import { CorridorBankDetails } from "@/components/CorridorBankDetails";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridors, getCorridor, money, monitoredProviders } from "@/lib/data";
@@ -65,6 +66,7 @@ export async function renderCorridorPage(slug: string) {
           <div className="section-heading table-title"><div><span className="kicker">PROVIDER RESULTS</span><h2>Today&apos;s quotes, including the misses</h2><p>Xe appears first as our Best Rated service. Price order then follows comparable recipient amounts; unsupported calculators remain visible rather than quietly disappearing.</p></div></div>
           <QuoteTable corridor={corridor} />
           <p className="data-caveat">{liveQuotes.length ? "Open any proof link to see the screen behind the figure. A missing public quote is shown as unavailable, and the provider should be checked again before money leaves your account." : "We have not substituted a sample rate. The provider list stays in place while the next successful captures are collected."}</p>
+          <CorridorBankDetails corridor={corridor} />
 
           <div className="history-block">
             <div className="section-heading"><div><span className="kicker">HISTORY</span><h2>What providers quoted before today</h2><p>A fresh rate replaces the headline figure, not the record behind it.</p></div></div>

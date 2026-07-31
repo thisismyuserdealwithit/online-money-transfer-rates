@@ -15,6 +15,8 @@ export function SiteFooter() {
           <Link href="/#corridors">All corridors</Link>
           <Link href="/reviews">Company reviews</Link>
           <Link href="/coverage">What we checked today</Link>
+          <Link href="/swift-codes">SWIFT and bank details</Link>
+          <Link href="/bic-codes">BIC format checker</Link>
         </div>
         <div>
           <strong>About</strong>

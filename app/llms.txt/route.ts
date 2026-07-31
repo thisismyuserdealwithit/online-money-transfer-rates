@@ -11,6 +11,8 @@ const content = `# Online Money Transfer
 - [Company rate reviews](${siteUrl}/reviews): Provider services assessed against current corridor evidence.
 - [Original research](${siteUrl}/research): UK remittance cost and financial access studies.
 - [Money transfer guides](${siteUrl}/guides): Rates, brokers, hedging and payment infrastructure.
+- [SWIFT and destination bank details](${siteUrl}/swift-codes): BIC structure and country-specific recipient-detail checklists.
+- [BIC format checker](${siteUrl}/bic-codes): Private browser check for 8 or 11-character BIC structure and country characters.
 - [Comparison methodology](${siteUrl}/methodology): Rules for verified, indicative and stale evidence.
 - [Free rates API](${siteUrl}/api): JSON and JavaScript access with visible attribution.
 

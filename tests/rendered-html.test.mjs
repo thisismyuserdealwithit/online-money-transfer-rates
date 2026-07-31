@@ -2,9 +2,6 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
-
 async function loadWorker() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${Math.random()}`);
@@ -22,7 +19,7 @@ const context = {
   passThroughOnException() {},
 };
 
-test("renders development preview metadata", async () => {
+test("renders production discovery metadata", async () => {
   const worker = await loadWorker();
 
   const response = await worker.fetch(
@@ -38,7 +35,62 @@ test("renders development preview metadata", async () => {
     response.headers.get("content-type") ?? "",
     /^text\/html\b/i,
   );
-  assert.match(await response.text(), developmentPreviewMeta);
+  const html = await response.text();
+  assert.match(
+    html,
+    /<link(?=[^>]*\brel=["']canonical["'])(?=[^>]*\bhref=["']https:\/\/onlinemoneytransfer\.co\.uk\/["'])[^>]*>/i,
+  );
+  assert.match(
+    html,
+    /<meta(?=[^>]*\bproperty=["']og:url["'])(?=[^>]*\bcontent=["']https:\/\/onlinemoneytransfer\.co\.uk\/["'])[^>]*>/i,
+  );
+});
+
+test("renders SWIFT, BIC and country bank-detail checks", async () => {
+  const worker = await loadWorker();
+
+  const swiftResponse = await worker.fetch(
+    new Request("http://localhost/swift-codes", { headers: { accept: "text/html" } }),
+    bindings,
+    context,
+  );
+  assert.equal(swiftResponse.status, 200);
+  const swiftHtml = await swiftResponse.text();
+  assert.match(swiftHtml, /SWIFT codes tell the payment where to look/);
+  assert.match(swiftHtml, /What bank details does each country use/);
+  assert.match(swiftHtml, /href="\/bank-details\/united-states\/"/);
+
+  const bicResponse = await worker.fetch(
+    new Request("http://localhost/bic-codes", { headers: { accept: "text/html" } }),
+    bindings,
+    context,
+  );
+  assert.equal(bicResponse.status, 200);
+  const bicHtml = await bicResponse.text();
+  assert.match(bicHtml, /Does this BIC look right for the country you are paying/);
+  assert.match(bicHtml, /It is not an institution, branch, account-name or fraud check/);
+
+  const countryResponse = await worker.fetch(
+    new Request("http://localhost/bank-details/united-states", { headers: { accept: "text/html" } }),
+    bindings,
+    context,
+  );
+  assert.equal(countryResponse.status, 200);
+  const countryHtml = await countryResponse.text();
+  assert.match(countryHtml, /What details do you need to send money to/);
+  assert.match(countryHtml, /ABA routing number/);
+  assert.match(countryHtml, /ACH and wire routing instructions are not always interchangeable/);
+
+  const corridorResponse = await worker.fetch(
+    new Request("http://localhost/uk-to-united-states", { headers: { accept: "text/html" } }),
+    bindings,
+    context,
+  );
+  assert.equal(corridorResponse.status, 200);
+  const corridorHtml = await corridorResponse.text();
+  assert.match(corridorHtml, /Check the bank details for/);
+  assert.match(corridorHtml, /Full (?:<!-- -->)?United States(?:<!-- -->)? checklist/);
+  assert.match(corridorHtml, /Run a private format check/);
 });
 
 test("renders the free API documentation and exposes the public feed", async () => {

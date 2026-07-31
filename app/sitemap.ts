@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { corridors } from "@/lib/data";
+import { bankDetailsProfiles } from "@/lib/bank-details";
 import { guides } from "@/lib/guides";
 import { providerReviews } from "@/lib/reviews";
 import { getCoverageDashboard, getProviderCoverage } from "@/lib/live-data";
@@ -7,7 +8,7 @@ import { siteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-const contentUpdated = new Date("2026-07-29T00:00:00.000Z");
+const contentUpdated = new Date("2026-07-31T00:00:00.000Z");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [dashboard, providerCoverage] = await Promise.all([
@@ -33,6 +34,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/coverage`, lastModified: currentDataUpdated, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/guides`, lastModified: contentUpdated, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/api`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl}/swift-codes`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${siteUrl}/bic-codes`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.75 },
+    ...bankDetailsProfiles.map((profile) => ({
+      url: `${siteUrl}/bank-details/${profile.slug}/`,
+      lastModified: contentUpdated,
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
+    })),
     ...guides.map((guide) => ({
       url: `${siteUrl}/guides/${guide.slug}`,
       lastModified: contentUpdated,

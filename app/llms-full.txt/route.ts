@@ -1,4 +1,5 @@
 import { corridors } from "@/lib/data";
+import { bankDetailsProfiles } from "@/lib/bank-details";
 import { guides } from "@/lib/guides";
 import { providerReviews } from "@/lib/reviews";
 import { siteUrl } from "@/lib/seo";
@@ -22,6 +23,12 @@ export function GET() {
         `- [${review.name} rate review](${siteUrl}/reviews/${review.slug}): ${review.verdict}`,
     )
     .join("\n");
+  const bankDetailLinks = bankDetailsProfiles
+    .map(
+      (profile) =>
+        `- [Bank details for ${profile.country}](${siteUrl}/bank-details/${profile.slug}/): ${profile.accountFormat}; local and SWIFT/BIC requirements with official source links.`,
+    )
+    .join("\n");
 
   const content = `# Online Money Transfer: full content index
 
@@ -38,6 +45,13 @@ ${guideLinks}
 ## Company reviews
 
 ${reviewLinks}
+
+## SWIFT, BIC and recipient bank details
+
+- [SWIFT code guide](${siteUrl}/swift-codes): ISO 9362 structure, limits and country index.
+- [BIC format checker](${siteUrl}/bic-codes): Client-side structure and country-character check.
+
+${bankDetailLinks}
 
 ## Research and policy
 
