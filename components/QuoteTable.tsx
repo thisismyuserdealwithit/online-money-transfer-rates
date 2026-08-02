@@ -1,6 +1,8 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { Corridor, money, monitoredProviders, providerSlugFromName, Quote } from "@/lib/data";
 import { hasProviderDestination } from "@/lib/affiliate";
+import { TopMoneyCompareRow } from "@/components/TopMoneyCompareRow";
 
 function compareQuotes(a: Quote, b: Quote) {
   if (a.provider === "Xe") return -1;
@@ -38,36 +40,44 @@ export function QuoteTable({ corridor, compact = false }: { corridor: Corridor; 
       <div className="quote-head">
         <span>Company</span><span>Rate and visible fee</span><span>What arrives</span><span>Our receipt</span>
       </div>
-      {xeUnavailable && <UnavailableRow provider={xeUnavailable.provider} mark={xeUnavailable.mark} unavailable={"unavailable" in xeUnavailable ? xeUnavailable.unavailable : undefined} />}
+      {xeUnavailable && (
+        <>
+          <UnavailableRow provider={xeUnavailable.provider} mark={xeUnavailable.mark} unavailable={"unavailable" in xeUnavailable ? xeUnavailable.unavailable : undefined} />
+          {!compact && <TopMoneyCompareRow corridor={corridor} />}
+        </>
+      )}
       {ordered.map((quote) => {
         const bestRated = quote.provider === "Xe";
         return (
-          <article className={`quote-row ${bestRated ? "quote-featured" : ""} ${quote.status !== "verified" ? "quote-muted" : ""}`} key={quote.provider}>
-            <div className="provider-cell">
-              <div className={`provider-mark provider-${quote.mark.toLowerCase()}`}>{quote.mark}</div>
-              <div>
-                <Link className="provider-review-link" href={`/reviews/${quote.providerSlug || providerSlugFromName(quote.provider)}`}>{quote.provider}</Link>
-                <small>{quote.delivery}</small>
-                {quote.status !== "stale" && hasProviderDestination(quote.providerSlug || providerSlugFromName(quote.provider)) && (
-                  <a
-                    className="provider-visit"
-                    href={`/go/${quote.providerSlug || providerSlugFromName(quote.provider)}?corridor=${encodeURIComponent(corridor.slug)}&placement=rate-table`}
-                    rel="sponsored nofollow"
-                  >
-                    Recheck with provider <span aria-hidden="true">↗</span>
-                  </a>
-                )}
+          <Fragment key={quote.provider}>
+            <article className={`quote-row ${bestRated ? "quote-featured" : ""} ${quote.status !== "verified" ? "quote-muted" : ""}`}>
+              <div className="provider-cell">
+                <div className={`provider-mark provider-${quote.mark.toLowerCase()}`}>{quote.mark}</div>
+                <div>
+                  <Link className="provider-review-link" href={`/reviews/${quote.providerSlug || providerSlugFromName(quote.provider)}`}>{quote.provider}</Link>
+                  <small>{quote.delivery}</small>
+                  {quote.status !== "stale" && hasProviderDestination(quote.providerSlug || providerSlugFromName(quote.provider)) && (
+                    <a
+                      className="provider-visit"
+                      href={`/go/${quote.providerSlug || providerSlugFromName(quote.provider)}?corridor=${encodeURIComponent(corridor.slug)}&placement=rate-table`}
+                      rel="sponsored nofollow"
+                    >
+                      Recheck with provider <span aria-hidden="true">↗</span>
+                    </a>
+                  )}
+                </div>
+                {bestRated && <b className="best-tag">Best Rated</b>}
               </div>
-              {bestRated && <b className="best-tag">Best Rated</b>}
-            </div>
-            <div className="rate-cell"><strong>{quote.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 })}</strong><small>Fee {money(quote.fee, corridor.fromCurrency)}</small></div>
-            <div className="gets-cell"><strong>{money(quote.recipientGets, corridor.toCurrency)}</strong><small>{quote.status === "verified" ? "Completed bank-transfer quote" : quote.status === "stale" ? "Due another check" : "Calculator evidence only"}</small></div>
-            <div className="proof-cell">
-              <Link href={`/${corridor.slug}/receipts/${quote.proofId}/`} className={quote.status === "stale" ? "disabled-proof" : "proof-link"}>{quote.status === "stale" ? "Pending" : "Open receipt"}</Link>
-              <small>{quote.checkedAt}</small>
-            </div>
-            {quote.note && <p className="quote-note">{quote.note}</p>}
-          </article>
+              <div className="rate-cell"><strong>{quote.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 })}</strong><small>Fee {money(quote.fee, corridor.fromCurrency)}</small></div>
+              <div className="gets-cell"><strong>{money(quote.recipientGets, corridor.toCurrency)}</strong><small>{quote.status === "verified" ? "Completed bank-transfer quote" : quote.status === "stale" ? "Due another check" : "Calculator evidence only"}</small></div>
+              <div className="proof-cell">
+                <Link href={`/${corridor.slug}/receipts/${quote.proofId}/`} className={quote.status === "stale" ? "disabled-proof" : "proof-link"}>{quote.status === "stale" ? "Pending" : "Open receipt"}</Link>
+                <small>{quote.checkedAt}</small>
+              </div>
+              {quote.note && <p className="quote-note">{quote.note}</p>}
+            </article>
+            {bestRated && !compact && <TopMoneyCompareRow corridor={corridor} />}
+          </Fragment>
         );
       })}
       {remainingUnavailable.map((entry) => <UnavailableRow provider={entry.provider} mark={entry.mark} unavailable={"unavailable" in entry ? entry.unavailable : undefined} key={entry.provider} />)}

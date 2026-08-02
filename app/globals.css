@@ -79,6 +79,14 @@ nav a:hover { color:var(--green); }
 .provider-visit { width:max-content; margin-top:2px; color:var(--green); font-size:10px; font-weight:850; text-decoration:underline; text-underline-offset:3px; }
 .table-commercial-note { margin:0; padding:12px 22px; border-top:1px solid #e7ece8; background:#f6f8f6; color:#6f7c76; font-size:10px; line-height:1.5; }
 .quote-note { grid-column:2/-1; margin:-10px 0 0; font-size:11px; color:#7b6b3a; padding:7px 9px; background:#fff8dc; border-radius:5px; }
+.tmc-compare-row { min-height:82px; display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; padding:13px 22px; border-top:1px solid #eadfc8; border-bottom:1px solid #eadfc8; background:linear-gradient(90deg,#fff8e9,#fffdf7); box-shadow:inset 4px 0 0 #df8f2f; }
+.tmc-compare-mark { width:43px; height:43px; display:grid; place-items:center; border-radius:13px; background:#173758; color:#fff; font-size:9px; font-weight:900; letter-spacing:.04em; }
+.tmc-compare-row>div { display:flex; flex-direction:column; gap:3px; }
+.tmc-compare-kicker { color:#9a621f; font-size:8px; font-weight:900; letter-spacing:.12em; }
+.tmc-compare-row strong { font:500 17px/1.25 Georgia,serif; }
+.tmc-compare-row small { color:#766d5d; font-size:9px; }
+.tmc-compare-row>a { min-width:max-content; padding:10px 12px; border:1px solid #d5b477; border-radius:8px; background:#fff; color:#173758; font-size:10px; font-weight:900; text-align:center; }
+.tmc-compare-row>a:hover { border-color:#df8f2f; background:#fff7e6; }
 .data-caveat { margin:14px 0 0; padding-left:12px; border-left:3px solid #e2b832; color:#6d6241; font-size:12px; }
 .how-section { background:var(--ink); color:white; padding:88px 0; }
 .section-heading.light h2 { color:white; }.section-heading.light>a { color:#82dab6; }
@@ -225,3 +233,14 @@ nav a:hover { color:var(--green); }
 
 .bank-checker-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 @media(max-width:640px){.bank-checker-grid{grid-template-columns:1fr}}
+
+@media(max-width:900px){
+  .tmc-compare-row{grid-template-columns:auto 1fr}
+  .tmc-compare-row>a{grid-column:2;width:max-content}
+}
+@media(max-width:640px){
+  .tmc-compare-row{grid-template-columns:38px 1fr;padding:16px 18px}
+  .tmc-compare-mark{width:38px;height:38px}
+  .tmc-compare-row strong{font-size:15px}
+  .tmc-compare-row>a{grid-column:1/-1;width:100%}
+}

@@ -91,6 +91,26 @@ test("renders SWIFT, BIC and country bank-detail checks", async () => {
   assert.match(corridorHtml, /Check the bank details for/);
   assert.match(corridorHtml, /Full (?:<!-- -->)?United States(?:<!-- -->)? checklist/);
   assert.match(corridorHtml, /Run a private format check/);
+  assert.match(corridorHtml, /Compare more companies for/);
+  assert.match(
+    corridorHtml,
+    /href="https:\/\/www\.topmoneycompare\.co\.uk\/transfer-money\/united-kingdom-to-united-states\?amount=200"/,
+  );
+
+  const xeIndex = corridorHtml.indexOf('href="/reviews/xe"');
+  const moreProvidersIndex = corridorHtml.indexOf('class="tmc-compare-row"');
+  const wiseIndex = corridorHtml.indexOf('href="/reviews/wise"');
+  assert.ok(xeIndex >= 0, "Xe listing should render on the corridor");
+  assert.ok(moreProvidersIndex > xeIndex, "TopMoneyCompare box should follow Xe");
+  assert.ok(wiseIndex < 0 || moreProvidersIndex < wiseIndex, "TopMoneyCompare box should precede Wise");
+
+  const homeResponse = await worker.fetch(
+    new Request("http://localhost/", { headers: { accept: "text/html" } }),
+    bindings,
+    context,
+  );
+  assert.equal(homeResponse.status, 200);
+  assert.doesNotMatch(await homeResponse.text(), /class="tmc-compare-row"/);
 });
 
 test("renders the free API documentation and exposes the public feed", async () => {

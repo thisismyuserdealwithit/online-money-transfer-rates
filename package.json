@@ -15,6 +15,7 @@
     "db:migrate:render": "node scripts/migrate-postgres.mjs",
     "test:render-schema": "node --test tests/render-postgres.test.mjs",
     "test:bank-details": "node --import tsx --test tests/bank-validation.test.ts",
+    "test:topmoneycompare": "node --import tsx --test tests/topmoneycompare.test.ts",
     "test": "npm run build && node --experimental-loader ./scripts/cloudflare-node-loader.mjs --test tests/rendered-html.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern .sites-runtime --ignore-pattern .pw-browsers --ignore-pattern crawler/node_modules",
