@@ -8,7 +8,7 @@ The public site stores structured quote records in D1 on Sites or Postgres on Re
 - Revolut: stored as indicative because plan usage, timing and transfer fees can change the final customer result.
 - CurrencyFair: stored as verified on supported currencies because its public widget shows recipient amount, customer rate and included fee.
 - Xe: stored as an indicative mid-market reference. Xe states that its converter rate is not the rate customers receive.
-- TransferGo: stored only when its public default route is bank funded and paid into a bank account. Promotional routes remain indicative.
+- TransferGo: stored only when its public response contains an available bank funded, bank deposit option. The crawler checks eligible alternatives when the provider defaults to a card, wallet or payment link. Promotional routes remain indicative.
 - SingX: monitored for Singapore outbound routes. Its public quote is indicative because the displayed fee is added to the transfer amount.
 - Remitly: first customer rates are stored as promotional and indicative. They never enter the standard winner calculation.
 - Instarem: monitored on UK outbound routes through its public bank transfer API and matching calculator. Anonymous first transfer rates are stored as promotional and indicative.
@@ -37,3 +37,4 @@ When one public comparison response contains several providers, the ingest store
 4. Screenshots are immutable. Corrections create a new record.
 5. First customer rates, card funding, cash pickup, wallets and business quotes are separate comparison cases.
 6. A Wise comparison estimate is useful coverage, but remains indicative even when its underlying provider is a bank or transfer company.
+7. A route that the provider's own public response marks unavailable is reported as unsupported, not as a crawler failure. It cannot replace an earlier successful quote.

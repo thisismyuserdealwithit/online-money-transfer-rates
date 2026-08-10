@@ -11,6 +11,12 @@ function isBankToBank(option) {
     && bankPayoutCodes.has(option?.payOut?.code);
 }
 
+export function selectBankToBankOption(options) {
+  if (!Array.isArray(options)) return undefined;
+  const defaultOption = options.find((item) => item.isDefault);
+  return isBankToBank(defaultOption) ? defaultOption : options.find(isBankToBank);
+}
+
 function countryCode(locale) {
   return locale === "gb" ? "GB" : locale.toUpperCase();
 }
@@ -56,7 +62,7 @@ export const transfergo = {
     if (payload?.error) throw new Error(`TransferGo ${payload.error}`);
     const options = Array.isArray(payload?.options) ? payload.options : [];
     const defaultOption = options.find((item) => item.isDefault);
-    const option = isBankToBank(defaultOption) ? defaultOption : options.find(isBankToBank);
+    const option = selectBankToBankOption(options);
     if (!option) {
       const defaultRoute = `${defaultOption?.payIn?.code ?? "unknown"} to ${defaultOption?.payOut?.code ?? "unknown"}`;
       throw new UnsupportedRouteError(`TransferGo offers no public bank-to-bank option; default is ${defaultRoute}`);
