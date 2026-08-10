@@ -265,5 +265,26 @@ const corridorSummary = selectedCorridors.map((corridor) => {
     unsupported: items.filter((item) => item.status === "unsupported").length,
   };
 });
-console.log(JSON.stringify(summaryOnly ? { runId, stored, failed, corridorSummary } : { runId, stored, failed, outcomes }, null, 2));
+const providerSummary = providers.map((provider) => {
+  const items = outcomes.filter((item) => item.provider === provider.slug);
+  const errors = new Map();
+  for (const item of items) {
+    if (item.status !== "failed") continue;
+    const reason = item.error || "Unknown failure";
+    errors.set(reason, (errors.get(reason) || 0) + 1);
+  }
+  return {
+    provider: provider.slug,
+    stored: items.filter((item) => item.status === "stored").length,
+    failed: items.filter((item) => item.status === "failed").length,
+    unsupported: items.filter((item) => item.status === "unsupported").length,
+    errors: [...errors.entries()].map(([error, count]) => ({ error, count })),
+  };
+});
+const failures = outcomes
+  .filter((item) => item.status === "failed")
+  .map(({ corridor, provider, error }) => ({ corridor, provider, error }));
+console.log(JSON.stringify(summaryOnly
+  ? { runId, stored, failed, providerSummary, corridorSummary, failures }
+  : { runId, stored, failed, outcomes }, null, 2));
 if (stored === 0 || failed > Math.max(6, stored)) process.exitCode = 1;
