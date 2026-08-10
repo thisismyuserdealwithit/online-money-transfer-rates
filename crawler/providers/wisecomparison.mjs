@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { basicResult, numeric } from "./shared.mjs";
+import { basicResult, numeric, UnsupportedRouteError } from "./shared.mjs";
 
 const providerHomepages = {
   asda: "https://money.asda.com/travel/travel-money/",
@@ -111,7 +111,7 @@ export const wiseComparison = {
         },
       }));
     }
-    if (!results.length) throw new Error("Wise comparison service returned no usable provider quotes");
+    if (!results.length) throw new UnsupportedRouteError("Wise comparison service publishes no usable provider quotes for this route");
     return results;
   },
 };

@@ -1,8 +1,15 @@
-import { basicResult, numeric } from "./shared.mjs";
+import { basicResult, numeric, UnsupportedRouteError } from "./shared.mjs";
 import { execFileSync } from "node:child_process";
 
 const supportedSourceLocales = new Set(["gb", "es", "fr", "de", "ie", "it", "nl", "pt", "pl"]);
-const bankPayoutCodes = new Set(["accountIdentifier", "iban", "bankAccount", "swift"]);
+const bankFundingCodes = new Set(["bank", "tink", "openBanking"]);
+const bankPayoutCodes = new Set(["accountIdentifier", "iban", "bankAccount", "swift", "ngLocalAccountNgn"]);
+
+function isBankToBank(option) {
+  return option?.availability?.isAvailable !== false
+    && bankFundingCodes.has(option?.payIn?.code)
+    && bankPayoutCodes.has(option?.payOut?.code);
+}
 
 function countryCode(locale) {
   return locale === "gb" ? "GB" : locale.toUpperCase();
@@ -47,10 +54,12 @@ export const transfergo = {
     const visibleText = await page.locator("body").innerText();
     const payload = JSON.parse(visibleText);
     if (payload?.error) throw new Error(`TransferGo ${payload.error}`);
-    const option = payload?.options?.find((item) => item.isDefault);
-    if (!option || option.availability?.isAvailable === false) throw new Error("TransferGo did not return an available default quote");
-    if (option.payIn?.code !== "bank" || !bankPayoutCodes.has(option.payOut?.code)) {
-      throw new Error(`TransferGo default route is not bank to bank (${option.payIn?.code ?? "unknown"} to ${option.payOut?.code ?? "unknown"})`);
+    const options = Array.isArray(payload?.options) ? payload.options : [];
+    const defaultOption = options.find((item) => item.isDefault);
+    const option = isBankToBank(defaultOption) ? defaultOption : options.find(isBankToBank);
+    if (!option) {
+      const defaultRoute = `${defaultOption?.payIn?.code ?? "unknown"} to ${defaultOption?.payOut?.code ?? "unknown"}`;
+      throw new UnsupportedRouteError(`TransferGo offers no public bank-to-bank option; default is ${defaultRoute}`);
     }
 
     const sourceAmount = numeric(String(option.sendingAmount?.value));
@@ -83,6 +92,7 @@ export const transfergo = {
       raw: {
         parser: "public-booking-quote-endpoint",
         optionCode: option.code,
+        selectedDefaultOption: Boolean(option.isDefault),
         payIn: option.payIn.code,
         payOut: option.payOut.code,
         promotion: option.promotion,

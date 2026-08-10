@@ -5,6 +5,13 @@ export function numeric(value) {
   return parsed;
 }
 
+export class UnsupportedRouteError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "UnsupportedRouteError";
+  }
+}
+
 export function find(text, pattern, label) {
   const match = text.match(pattern);
   if (!match?.[1]) throw new Error(`Could not read ${label}`);

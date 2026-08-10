@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { basicResult, numeric } from "./shared.mjs";
+import { basicResult, numeric, UnsupportedRouteError } from "./shared.mjs";
 
 const destinationSlugByLocale = {
   es: "spain",
@@ -53,9 +53,9 @@ export const instarem = {
       country_code: "GB",
     });
     const methodsPayload = getJson(`${apiBase}/v1/public/payment-method/fee?${feeParams}`);
-    if (!Array.isArray(methodsPayload?.data)) throw new Error("Instarem did not return public payment methods for this route");
+    if (!Array.isArray(methodsPayload?.data)) throw new UnsupportedRouteError("Instarem does not publish payment methods for this route");
     const bankMethod = methodsPayload.data.find((method) => /bank transfer/i.test(method.text || ""));
-    if (!bankMethod?.key) throw new Error("Instarem did not offer public bank transfer funding for this route");
+    if (!bankMethod?.key) throw new UnsupportedRouteError("Instarem does not offer public bank transfer funding for this route");
 
     const quoteParams = new URLSearchParams({
       source_currency: corridor.sourceCurrency,

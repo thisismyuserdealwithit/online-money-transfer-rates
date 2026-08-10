@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { basicResult, numeric } from "./shared.mjs";
+import { basicResult, numeric, UnsupportedRouteError } from "./shared.mjs";
 
 const supportedCorridors = new Set([
   "uk-to-spain", "uk-to-france", "uk-to-germany", "uk-to-ireland", "uk-to-italy", "uk-to-netherlands", "uk-to-portugal",
@@ -72,7 +72,7 @@ export const taptapSend = {
     const destinationCode = countryCode(corridor.destinationLocale);
     const origin = rates()?.availableCountries?.find((candidate) => candidate.isoCountryCode === originCode && candidate.currency === corridor.sourceCurrency);
     const destination = origin?.corridors?.find((candidate) => candidate.isoCountryCode === destinationCode && candidate.currency === corridor.destinationCurrency);
-    if (!origin || !destination) throw new Error("Taptap Send no longer exposes this public destination quote");
+    if (!origin || !destination) throw new UnsupportedRouteError("Taptap Send does not expose this destination in its public calculator");
 
     const exchangeRate = numeric(String(destination.govIncentive?.effectiveFxRate ?? destination.fxRate));
     const recipientAmount = Number((corridor.sourceAmount * exchangeRate).toFixed(Math.max(0, Number(destination.currencyScale ?? 2))));

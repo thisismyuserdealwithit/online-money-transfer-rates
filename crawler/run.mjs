@@ -19,6 +19,7 @@ import { wise } from "./providers/wise.mjs";
 import { wiseComparison } from "./providers/wisecomparison.mjs";
 import { westernunion } from "./providers/westernunion.mjs";
 import { xe } from "./providers/xe.mjs";
+import { UnsupportedRouteError } from "./providers/shared.mjs";
 
 const endpoint = process.env.INGEST_ENDPOINT;
 const token = process.env.INGEST_TOKEN;
@@ -97,6 +98,7 @@ async function captureQuote(provider, corridor) {
       return quote;
     } catch (error) {
       lastError = error;
+      if (error instanceof UnsupportedRouteError) break;
     } finally {
       await page.close();
     }
@@ -227,8 +229,10 @@ try {
         const quote = await captureQuote(provider, corridor);
         await storeCapturedQuote(corridor, quote);
       } catch (error) {
-        outcomes.push({ corridor: corridor.slug, provider: provider.slug, status: "failed", error: error instanceof Error ? error.message : String(error) });
-        if (!summaryOnly) console.error(`[failed] ${corridor.slug} · ${provider.slug} · ${error instanceof Error ? error.message : String(error)}`);
+        const reason = error instanceof Error ? error.message : String(error);
+        const status = error instanceof UnsupportedRouteError ? "unsupported" : "failed";
+        outcomes.push({ corridor: corridor.slug, provider: provider.slug, status, ...(status === "failed" ? { error: reason } : { reason }) });
+        if (!summaryOnly) console.error(`[${status}] ${corridor.slug} · ${provider.slug} · ${reason}`);
       }
     }
   }

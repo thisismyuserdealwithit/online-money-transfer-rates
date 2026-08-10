@@ -24,7 +24,7 @@ export const xe = {
       To: corridor.destinationCurrency,
     });
     const quoteUrl = `https://www.xe.com/currencyconverter/convert/?${params}`;
-    const html = execFileSync("curl", ["-sS", "--max-time", "45", "-A", "Mozilla/5.0", quoteUrl], {
+    const html = execFileSync("curl", ["-sS", "-L", "--compressed", "--max-time", "45", "-A", "Mozilla/5.0", quoteUrl], {
       encoding: "utf8",
       maxBuffer: 20_000_000,
     });
