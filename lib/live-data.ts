@@ -1,5 +1,6 @@
 import { query, queryOne } from "@/lib/platform-runtime";
-import type { Quote } from "@/lib/data";
+import { corridors, getCorridor, type Quote } from "@/lib/data";
+import { COMPARISON_FRESHNESS_MS, hasIndexableComparison, isFreshComparableCase, isRankEligible } from "@/lib/comparison-case";
 
 type D1Row = {
   id: string;
@@ -7,13 +8,19 @@ type D1Row = {
   provider_name: string;
   quote_type: "verified" | "indicative";
   status: "current" | "stale" | "invalid";
+  corridor_slug: string;
   source_amount: number;
+  source_currency: string;
   recipient_amount: number;
+  recipient_currency: string;
   fee_amount: number;
+  fee_currency: string;
   exchange_rate: number;
   delivery_estimate: string | null;
   plan_name: string | null;
   promotion: number;
+  funding_method: string;
+  payout_method: string;
   captured_at: string;
 };
 
@@ -22,8 +29,13 @@ export type HistoryQuote = {
   provider: string;
   providerSlug: string;
   quoteType: "verified" | "indicative";
+  sourceAmount: number;
+  sourceCurrency: string;
   recipientAmount: number;
   recipientCurrency: string;
+  fundingMethod: string;
+  payoutMethod: string;
+  promotion: boolean;
   capturedAt: string;
 };
 
@@ -69,6 +81,8 @@ export type ProviderRateEvidence = {
   deliveryEstimate: string | null;
   fundingMethod: string;
   payoutMethod: string;
+  promotion: boolean;
+  eligibleForPriceRanking: boolean;
   bestVerifiedRecipient: number | null;
   bestVerifiedProvider: string | null;
   matchedCompetitors: number;
@@ -79,22 +93,55 @@ function markFor(slug: string) {
   return marks[slug] ?? slug.slice(0, 2).toUpperCase();
 }
 
+function comparisonCutoff(now = Date.now()) {
+  return new Date(now - COMPARISON_FRESHNESS_MS).toISOString();
+}
+
+function rankEligibleRow(row: D1Row) {
+  const corridor = getCorridor(row.corridor_slug);
+  return Boolean(corridor && isRankEligible(corridor, {
+    corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+    recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+    recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
+    fundingMethod: row.funding_method, payoutMethod: row.payout_method,
+    quoteType: row.quote_type, promotion: row.promotion, providerSlug: row.provider_slug,
+  }));
+}
+
 function asQuote(row: D1Row): Quote {
-  const age = Date.now() - Date.parse(row.captured_at);
-  const stale = row.status === "stale" || age > 36 * 60 * 60 * 1000;
+  const corridor = getCorridor(row.corridor_slug);
+  const comparable = Boolean(corridor && isFreshComparableCase(corridor, {
+    corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+    recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+  }));
   const promotion = Number(row.promotion) === 1;
+  const eligibleForPriceRanking = Boolean(corridor && isRankEligible(corridor, {
+    corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+    recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+    recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
+    fundingMethod: row.funding_method, payoutMethod: row.payout_method,
+    quoteType: row.quote_type, promotion, providerSlug: row.provider_slug,
+  }));
   return {
     provider: row.provider_name,
     providerSlug: row.provider_slug,
     mark: markFor(row.provider_slug),
     sourceAmount: row.source_amount,
+    sourceCurrency: row.source_currency,
+    recipientCurrency: row.recipient_currency,
     rate: row.exchange_rate,
     fee: row.fee_amount,
+    feeCurrency: row.fee_currency,
     recipientGets: row.recipient_amount,
     delivery: row.delivery_estimate ?? "Ask the provider for timing",
     checkedAt: new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(row.captured_at)) + " UTC",
-    status: stale ? "stale" : row.quote_type,
+    status: comparable ? row.quote_type : "stale",
+    capturedAt: row.captured_at,
     proofId: row.id,
+    fundingMethod: row.funding_method,
+    payoutMethod: row.payout_method,
+    promotion,
+    eligibleForPriceRanking,
     note: promotion
       ? `${row.plan_name ?? "Introductory quote"}. We keep the receipt, but a price available only to selected customers cannot win the standard table.`
       : row.quote_type === "indicative"
@@ -104,20 +151,20 @@ function asQuote(row: D1Row): Quote {
 }
 
 export async function getLatestQuotes(corridorSlug: string): Promise<Quote[]> {
+  const corridor = getCorridor(corridorSlug);
+  if (!corridor) return [];
   try {
     const rows = await query<D1Row>(`
       SELECT q.* FROM quotes q
-      INNER JOIN (
-        SELECT provider_slug, MAX(captured_at) AS latest_capture
-        FROM quotes
-        WHERE corridor_slug = ? AND status != 'invalid'
-        GROUP BY provider_slug
-      ) latest
-      ON q.provider_slug = latest.provider_slug AND q.captured_at = latest.latest_capture
-      WHERE q.corridor_slug = ?
-      ORDER BY q.recipient_amount DESC
-    `, [corridorSlug, corridorSlug]);
-    return rows.map(asQuote);
+      WHERE q.corridor_slug = ? AND q.status != 'invalid'
+      ORDER BY q.captured_at DESC, q.recipient_amount DESC
+    `, [corridorSlug]);
+    const latest = new Map<string, D1Row>();
+    for (const row of rows) {
+      if (!isFreshComparableCase(corridor, { corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency, recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at })) continue;
+      if (!latest.has(row.provider_slug)) latest.set(row.provider_slug, row);
+    }
+    return [...latest.values()].map(asQuote).sort((a, b) => Number(b.eligibleForPriceRanking) - Number(a.eligibleForPriceRanking) || b.recipientGets - a.recipientGets);
   } catch {
     return [];
   }
@@ -138,11 +185,16 @@ export async function getQuoteHistory(corridorSlug: string): Promise<HistoryQuot
       provider_slug: string;
       provider_name: string;
       quote_type: "verified" | "indicative";
+      source_amount: number;
+      source_currency: string;
       recipient_amount: number;
       recipient_currency: string;
+      funding_method: string;
+      payout_method: string;
+      promotion: number;
       captured_at: string;
     }>(`
-      SELECT id, provider_slug, provider_name, quote_type, recipient_amount, recipient_currency, captured_at
+      SELECT id, provider_slug, provider_name, quote_type, source_amount, source_currency, recipient_amount, recipient_currency, funding_method, payout_method, promotion, captured_at
       FROM quotes
       WHERE corridor_slug = ? AND status != 'invalid'
       ORDER BY captured_at DESC, recipient_amount DESC
@@ -153,8 +205,13 @@ export async function getQuoteHistory(corridorSlug: string): Promise<HistoryQuot
       provider: row.provider_name,
       providerSlug: row.provider_slug,
       quoteType: row.quote_type,
+      sourceAmount: Number(row.source_amount),
+      sourceCurrency: row.source_currency,
       recipientAmount: row.recipient_amount,
       recipientCurrency: row.recipient_currency,
+      fundingMethod: row.funding_method,
+      payoutMethod: row.payout_method,
+      promotion: Number(row.promotion) === 1,
       capturedAt: row.captured_at,
     }));
   } catch {
@@ -164,34 +221,8 @@ export async function getQuoteHistory(corridorSlug: string): Promise<HistoryQuot
 
 export async function getCoverageDashboard(): Promise<{ corridors: CorridorCoverage[]; runs: CrawlRunSummary[] }> {
   try {
-    const [coverage, runs] = await Promise.all([
-      query<{
-        corridor_slug: string;
-        provider_count: number;
-        verified_count: number;
-        indicative_count: number;
-        latest_captured_at: string | null;
-      }>(`
-        WITH latest AS (
-          SELECT corridor_slug, provider_slug, MAX(captured_at) AS latest_capture
-          FROM quotes
-          WHERE status != 'invalid'
-          GROUP BY corridor_slug, provider_slug
-        )
-        SELECT
-          q.corridor_slug,
-          COUNT(*) AS provider_count,
-          SUM(CASE WHEN q.quote_type = 'verified' THEN 1 ELSE 0 END) AS verified_count,
-          SUM(CASE WHEN q.quote_type = 'indicative' THEN 1 ELSE 0 END) AS indicative_count,
-          MAX(q.captured_at) AS latest_captured_at
-        FROM quotes q
-        INNER JOIN latest l
-          ON q.corridor_slug = l.corridor_slug
-          AND q.provider_slug = l.provider_slug
-          AND q.captured_at = l.latest_capture
-        GROUP BY q.corridor_slug
-        ORDER BY q.corridor_slug
-      `),
+    const [quoteRows, runs] = await Promise.all([
+      query<D1Row>(`SELECT q.* FROM quotes q WHERE q.status != 'invalid' AND q.captured_at >= ? ORDER BY q.captured_at DESC`, [comparisonCutoff()]),
       query<{
         id: string;
         started_at: string;
@@ -207,14 +238,25 @@ export async function getCoverageDashboard(): Promise<{ corridors: CorridorCover
         LIMIT 12
       `),
     ]);
+    const latest = new Map<string, D1Row>();
+    for (const row of quoteRows) {
+      const corridor = getCorridor(row.corridor_slug);
+      if (!corridor || !isFreshComparableCase(corridor, { corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency, recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at })) continue;
+      const key = `${row.corridor_slug}:${row.provider_slug}`;
+      if (!latest.has(key)) latest.set(key, row);
+    }
+    const coverage = new Map<string, CorridorCoverage>();
+    for (const row of latest.values()) {
+      const summary = coverage.get(row.corridor_slug) ?? { corridorSlug: row.corridor_slug, providerCount: 0, verifiedCount: 0, indicativeCount: 0, latestCapturedAt: null };
+      summary.providerCount += 1;
+      const eligible = rankEligibleRow(row);
+      summary.verifiedCount += eligible ? 1 : 0;
+      summary.indicativeCount += eligible ? 0 : 1;
+      if (!summary.latestCapturedAt || row.captured_at > summary.latestCapturedAt) summary.latestCapturedAt = row.captured_at;
+      coverage.set(row.corridor_slug, summary);
+    }
     return {
-      corridors: coverage.map((row) => ({
-        corridorSlug: row.corridor_slug,
-        providerCount: Number(row.provider_count),
-        verifiedCount: Number(row.verified_count),
-        indicativeCount: Number(row.indicative_count),
-        latestCapturedAt: row.latest_captured_at,
-      })),
+      corridors: [...coverage.values()].sort((a, b) => a.corridorSlug.localeCompare(b.corridorSlug)),
       runs: runs.map((row) => ({
         id: row.id,
         startedAt: row.started_at,
@@ -232,43 +274,25 @@ export async function getCoverageDashboard(): Promise<{ corridors: CorridorCover
 
 export async function getProviderCoverage(): Promise<ProviderCoverage[]> {
   try {
-    const rows = await query<{
-      provider_slug: string;
-      provider_name: string;
-      corridor_count: number;
-      verified_count: number;
-      indicative_count: number;
-      latest_captured_at: string | null;
-    }>(`
-      WITH latest AS (
-        SELECT corridor_slug, provider_slug, MAX(captured_at) AS latest_capture
-        FROM quotes
-        WHERE status != 'invalid'
-        GROUP BY corridor_slug, provider_slug
-      )
-      SELECT
-        q.provider_slug,
-        q.provider_name,
-        COUNT(*) AS corridor_count,
-        SUM(CASE WHEN q.quote_type = 'verified' THEN 1 ELSE 0 END) AS verified_count,
-        SUM(CASE WHEN q.quote_type = 'indicative' THEN 1 ELSE 0 END) AS indicative_count,
-        MAX(q.captured_at) AS latest_captured_at
-      FROM quotes q
-      INNER JOIN latest l
-        ON q.corridor_slug = l.corridor_slug
-        AND q.provider_slug = l.provider_slug
-        AND q.captured_at = l.latest_capture
-      GROUP BY q.provider_slug, q.provider_name
-      ORDER BY corridor_count DESC, q.provider_name
-    `);
-    return rows.map((row) => ({
-      providerSlug: row.provider_slug,
-      providerName: row.provider_name,
-      corridorCount: Number(row.corridor_count),
-      verifiedCount: Number(row.verified_count),
-      indicativeCount: Number(row.indicative_count),
-      latestCapturedAt: row.latest_captured_at,
-    }));
+    const rows = await query<D1Row>(`SELECT q.* FROM quotes q WHERE q.status != 'invalid' AND q.captured_at >= ? ORDER BY q.captured_at DESC`, [comparisonCutoff()]);
+    const latest = new Map<string, D1Row>();
+    for (const row of rows) {
+      const corridor = getCorridor(row.corridor_slug);
+      if (!corridor || !isFreshComparableCase(corridor, { corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency, recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at })) continue;
+      const key = `${row.provider_slug}:${row.corridor_slug}`;
+      if (!latest.has(key)) latest.set(key, row);
+    }
+    const result = new Map<string, ProviderCoverage>();
+    for (const row of latest.values()) {
+      const summary = result.get(row.provider_slug) ?? { providerSlug: row.provider_slug, providerName: row.provider_name, corridorCount: 0, verifiedCount: 0, indicativeCount: 0, latestCapturedAt: null };
+      summary.corridorCount += 1;
+      const eligible = rankEligibleRow(row);
+      summary.verifiedCount += eligible ? 1 : 0;
+      summary.indicativeCount += eligible ? 0 : 1;
+      if (!summary.latestCapturedAt || row.captured_at > summary.latestCapturedAt) summary.latestCapturedAt = row.captured_at;
+      result.set(row.provider_slug, summary);
+    }
+    return [...result.values()].sort((a, b) => b.corridorCount - a.corridorCount || a.providerName.localeCompare(b.providerName));
   } catch {
     return [];
   }
@@ -276,110 +300,88 @@ export async function getProviderCoverage(): Promise<ProviderCoverage[]> {
 
 export async function getProviderRateEvidence(providerSlug: string): Promise<ProviderRateEvidence[]> {
   try {
-    const rows = await query<{
-      id: string;
-      corridor_slug: string;
-      source_amount: number;
-      source_currency: string;
-      recipient_amount: number;
-      recipient_currency: string;
-      fee_amount: number;
-      fee_currency: string;
-      exchange_rate: number;
-      quote_type: "verified" | "indicative";
-      captured_at: string;
-      delivery_estimate: string | null;
-      funding_method: string;
-      payout_method: string;
-      best_verified_recipient: number | null;
-      best_verified_provider: string | null;
-      matched_competitors: number;
-    }>(`
-      WITH latest AS (
-        SELECT corridor_slug, provider_slug, MAX(captured_at) AS latest_capture
-        FROM quotes
-        WHERE status != 'invalid'
-        GROUP BY corridor_slug, provider_slug
-      ),
-      current_quotes AS (
-        SELECT q.*
-        FROM quotes q
-        INNER JOIN latest l
-          ON q.corridor_slug = l.corridor_slug
-          AND q.provider_slug = l.provider_slug
-          AND q.captured_at = l.latest_capture
-        WHERE q.status != 'invalid'
-      )
-      SELECT
-        p.id,
-        p.corridor_slug,
-        p.source_amount,
-        p.source_currency,
-        p.recipient_amount,
-        p.recipient_currency,
-        p.fee_amount,
-        p.fee_currency,
-        p.exchange_rate,
-        p.quote_type,
-        p.captured_at,
-        p.delivery_estimate,
-        p.funding_method,
-        p.payout_method,
-        (
-          SELECT c.recipient_amount
-          FROM current_quotes c
-          WHERE c.corridor_slug = p.corridor_slug
-            AND c.quote_type = 'verified'
-            AND c.promotion = 0
-            AND ABS(c.source_amount - p.source_amount) < 0.01
-          ORDER BY c.recipient_amount DESC
-          LIMIT 1
-        ) AS best_verified_recipient,
-        (
-          SELECT c.provider_name
-          FROM current_quotes c
-          WHERE c.corridor_slug = p.corridor_slug
-            AND c.quote_type = 'verified'
-            AND c.promotion = 0
-            AND ABS(c.source_amount - p.source_amount) < 0.01
-          ORDER BY c.recipient_amount DESC
-          LIMIT 1
-        ) AS best_verified_provider,
-        (
-          SELECT COUNT(*)
-          FROM current_quotes c
-          WHERE c.corridor_slug = p.corridor_slug
-            AND c.quote_type = 'verified'
-            AND c.promotion = 0
-            AND ABS(c.source_amount - p.source_amount) < 0.01
-        ) AS matched_competitors
-      FROM current_quotes p
-      WHERE p.provider_slug = ?
-      ORDER BY
-        CASE WHEN p.quote_type = 'verified' THEN 0 ELSE 1 END,
-        p.captured_at DESC,
-        p.corridor_slug
-    `, [providerSlug]);
-    return rows.map((row) => ({
-      id: row.id,
-      corridorSlug: row.corridor_slug,
-      sourceAmount: Number(row.source_amount),
-      sourceCurrency: row.source_currency,
-      recipientAmount: Number(row.recipient_amount),
-      recipientCurrency: row.recipient_currency,
-      feeAmount: Number(row.fee_amount),
-      feeCurrency: row.fee_currency,
-      exchangeRate: Number(row.exchange_rate),
-      quoteType: row.quote_type,
-      capturedAt: row.captured_at,
-      deliveryEstimate: row.delivery_estimate,
-      fundingMethod: row.funding_method,
-      payoutMethod: row.payout_method,
-      bestVerifiedRecipient: row.best_verified_recipient === null ? null : Number(row.best_verified_recipient),
-      bestVerifiedProvider: row.best_verified_provider,
-      matchedCompetitors: Number(row.matched_competitors),
-    }));
+    const rows = await query<D1Row>(`SELECT q.* FROM quotes q WHERE q.status != 'invalid' AND q.captured_at >= ? ORDER BY q.captured_at DESC`, [comparisonCutoff()]);
+    const latest = new Map<string, D1Row>();
+    for (const row of rows) {
+      const corridor = getCorridor(row.corridor_slug);
+      if (!corridor || !isFreshComparableCase(corridor, { corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency, recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at })) continue;
+      const key = `${row.corridor_slug}:${row.provider_slug}`;
+      if (!latest.has(key)) latest.set(key, row);
+    }
+    return [...latest.values()].filter((row) => row.provider_slug === providerSlug).map((row) => {
+      const corridor = getCorridor(row.corridor_slug)!;
+      const competitors = [...latest.values()].filter((candidate) => candidate.corridor_slug === row.corridor_slug && isRankEligible(corridor, {
+        corridorSlug: candidate.corridor_slug, sourceAmount: candidate.source_amount, sourceCurrency: candidate.source_currency,
+        recipientCurrency: candidate.recipient_currency, status: candidate.status, capturedAt: candidate.captured_at,
+        recipientAmount: candidate.recipient_amount, exchangeRate: candidate.exchange_rate,
+        fundingMethod: candidate.funding_method, payoutMethod: candidate.payout_method,
+        quoteType: candidate.quote_type, promotion: candidate.promotion, providerSlug: candidate.provider_slug,
+      })).sort((a, b) => b.recipient_amount - a.recipient_amount);
+      const promotion = Number(row.promotion) === 1;
+      const eligibleForPriceRanking = isRankEligible(corridor, {
+        corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+        recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+        recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
+        fundingMethod: row.funding_method, payoutMethod: row.payout_method,
+        quoteType: row.quote_type, promotion, providerSlug: row.provider_slug,
+      });
+      return {
+        id: row.id, corridorSlug: row.corridor_slug, sourceAmount: Number(row.source_amount), sourceCurrency: row.source_currency,
+        recipientAmount: Number(row.recipient_amount), recipientCurrency: row.recipient_currency, feeAmount: Number(row.fee_amount),
+        feeCurrency: row.fee_currency, exchangeRate: Number(row.exchange_rate), quoteType: row.quote_type, capturedAt: row.captured_at,
+        deliveryEstimate: row.delivery_estimate, fundingMethod: row.funding_method, payoutMethod: row.payout_method,
+        promotion, eligibleForPriceRanking,
+        bestVerifiedRecipient: competitors[0]?.recipient_amount ?? null, bestVerifiedProvider: competitors[0]?.provider_name ?? null,
+        matchedCompetitors: competitors.length,
+      };
+    }).sort((a, b) => Number(b.quoteType === "verified") - Number(a.quoteType === "verified") || b.capturedAt.localeCompare(a.capturedAt));
   } catch {
     return [];
+  }
+}
+
+export async function getIndexableCorridorSlugs(): Promise<string[]> {
+  try {
+    const rows = await query<D1Row>(`
+      SELECT q.* FROM quotes q
+      WHERE q.status != 'invalid' AND q.captured_at >= ?
+      ORDER BY q.captured_at DESC
+    `, [comparisonCutoff()]);
+    const byCorridor = new Map<string, D1Row[]>();
+    for (const row of rows) {
+      const bucket = byCorridor.get(row.corridor_slug) ?? [];
+      bucket.push(row);
+      byCorridor.set(row.corridor_slug, bucket);
+    }
+    return corridors.filter((corridor) => hasIndexableComparison(corridor, (byCorridor.get(corridor.slug) ?? []).map((row) => ({
+      corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+      recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+      recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
+      fundingMethod: row.funding_method, payoutMethod: row.payout_method,
+      quoteType: row.quote_type, promotion: row.promotion, providerSlug: row.provider_slug,
+    })))).map((corridor) => corridor.slug);
+  } catch {
+    return [];
+  }
+}
+
+export async function isCorridorIndexable(corridorSlug: string) {
+  const corridor = getCorridor(corridorSlug);
+  if (!corridor) return false;
+  try {
+    const rows = await query<D1Row>(`
+      SELECT q.* FROM quotes q
+      WHERE q.corridor_slug = ? AND q.status != 'invalid' AND q.captured_at >= ?
+      ORDER BY q.captured_at DESC
+    `, [corridorSlug, comparisonCutoff()]);
+    return hasIndexableComparison(corridor, rows.map((row) => ({
+      corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+      recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+      recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
+      fundingMethod: row.funding_method, payoutMethod: row.payout_method,
+      quoteType: row.quote_type, promotion: row.promotion, providerSlug: row.provider_slug,
+    })));
+  } catch {
+    return false;
   }
 }

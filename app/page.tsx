@@ -35,7 +35,7 @@ export default async function Home() {
   const featuredBase = corridors[0];
   const liveQuotes = await getLatestQuotes(featuredBase.slug);
   const featured = { ...featuredBase, quotes: liveQuotes };
-  const best = liveQuotes.filter((quote) => quote.status === "verified").sort((a, b) => b.recipientGets - a.recipientGets)[0];
+  const best = liveQuotes.filter((quote) => quote.eligibleForPriceRanking).sort((a, b) => b.recipientGets - a.recipientGets)[0];
   const sourceAmount = best?.sourceAmount ?? featured.testAmount;
 
   return (
@@ -54,7 +54,7 @@ export default async function Home() {
             <aside className="receipt-card" aria-label="Latest verified quote receipt">
               <div className="receipt-top"><span>QUOTE RECEIPT</span><b>{best ? "CHECKED" : "PENDING"}</b></div>
               <div className="receipt-route"><div><small>You send</small><strong>{money(sourceAmount, featured.fromCurrency)}</strong><span>{featured.fromCurrency} · Bank transfer</span></div><i>→</i><div><small>They receive</small><strong>{best ? money(best.recipientGets, featured.toCurrency) : "Pending"}</strong><span>{featured.toCurrency} · Bank deposit</span></div></div>
-              <div className="receipt-lines"><div><span>Provider</span><strong>{best?.provider ?? "Manual check"}</strong></div><div><span>Quoted rate</span><strong>{best?.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 }) ?? "Pending"}</strong></div><div><span>Transfer fee</span><strong>{best ? money(best.fee, featured.fromCurrency) : "Pending"}</strong></div></div>
+              <div className="receipt-lines"><div><span>Provider</span><strong>{best?.provider ?? "Manual check"}</strong></div><div><span>Quoted rate</span><strong>{best?.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 }) ?? "Pending"}</strong></div><div><span>Transfer fee</span><strong>{best ? money(best.fee, best.feeCurrency ?? featured.fromCurrency) : "Pending"}</strong></div></div>
               <div className="receipt-stamp"><div>PUBLIC QUOTE<br /><b>{best ? best.checkedAt.split(",")[0].toUpperCase() : "IN PROGRESS"}</b></div><span>Screenshot<br />{best ? "stored" : "pending"}</span></div>
               {!best && <p className="sample-warning">The latest manual check has not landed yet, so we are not dressing an old rate up as today&apos;s.</p>}
             </aside>

@@ -43,8 +43,8 @@ export async function GET(
   const historyLimit = Number.isFinite(requested)
     ? Math.max(1, Math.min(30, Math.trunc(requested)))
     : 14;
-  const rates = await getPublicRates(route, historyLimit);
-  const corridorUrl = `${OMT_PUBLIC_ORIGIN}/${route}/`;
+  const rates = await getPublicRates(corridor, historyLimit);
+  const corridorUrl = `${OMT_PUBLIC_ORIGIN}/${route}`;
 
   return json({
     apiVersion: OMT_API_VERSION,

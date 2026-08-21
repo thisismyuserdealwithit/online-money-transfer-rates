@@ -5,9 +5,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "How We Compare Money Transfer Rates",
-  description:
-    "See how Online Money Transfer checks provider rates, separates verified quotes from indicative evidence and preserves every dated receipt.",
+  title: "Money Transfer Comparison Methodology",
+  description: "How Online Money Transfer compares like-for-like bank-funded quotes, excludes promotions from rankings and preserves timestamped evidence.",
   path: "/methodology",
 });
 

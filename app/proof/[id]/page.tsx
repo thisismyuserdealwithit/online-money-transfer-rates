@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { corridors } from "@/lib/data";
+import { corridors, getCorridor } from "@/lib/data";
 import { getLiveProof } from "@/lib/live-data";
 import { pageMetadata } from "@/lib/seo";
 
@@ -20,7 +20,7 @@ export async function generateMetadata(
   });
 }
 
-export default async function ProofPage({ params }: { params: Promise<{ id: string }> }) {
+export async function ProofContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const live = await getLiveProof(id);
   let found: { corridor: (typeof corridors)[number]; quote: (typeof corridors)[number]["quotes"][number] } | undefined;
@@ -41,7 +41,7 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
       <>
         <SiteHeader />
         <main className="proof-page shell">
-          <div className="crumbs"><Link href={`/${corridor.slug}/`}>← Return to the rate table</Link></div>
+          <div className="crumbs"><Link href={`/${corridor.slug}`}>← Return to the rate table</Link></div>
           <div className="proof-layout">
             <section>
               <span className="kicker">THE STORED RECEIPT</span>
@@ -85,7 +85,7 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
     <>
       <SiteHeader />
       <main className="proof-page shell">
-          <div className="crumbs"><Link href={`/${corridor.slug}/`}>← Return to the rate table</Link></div>
+          <div className="crumbs"><Link href={`/${corridor.slug}`}>← Return to the rate table</Link></div>
         <div className="proof-layout">
           <section>
             <span className="kicker">THE STORED RECEIPT</span>
@@ -106,4 +106,13 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
       <SiteFooter />
     </>
   );
+}
+
+export default async function LegacyProofPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const live = await getLiveProof(id);
+  const fallbackCorridor = corridors.find((corridor) => corridor.quotes.some((quote) => quote.proofId === id));
+  const corridor = live ? getCorridor(String(live.corridor_slug)) : fallbackCorridor;
+  if (!corridor) notFound();
+  permanentRedirect(`/${corridor.slug}/receipts/${encodeURIComponent(id)}`);
 }

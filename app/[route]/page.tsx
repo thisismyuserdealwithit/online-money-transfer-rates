@@ -4,6 +4,7 @@ import {
   renderCorridorPage,
 } from "@/app/corridors/[slug]/page";
 import { getCorridor } from "@/lib/data";
+import { isCorridorIndexable } from "@/lib/live-data";
 import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +21,12 @@ export async function generateMetadata(
   if (!corridor) return {};
   const title = `${corridor.fromCountry} to ${corridor.toCountry} Money Transfer Rates Today`;
   const description = `Compare current ${corridor.fromCurrency} to ${corridor.toCurrency} transfer rates, fees, recipient amounts and dated provider receipts.`;
+  const indexable = await isCorridorIndexable(route);
   return pageMetadata({
     title,
     description,
     path: `/${route}/`,
+    noIndex: !indexable,
   });
 }
 

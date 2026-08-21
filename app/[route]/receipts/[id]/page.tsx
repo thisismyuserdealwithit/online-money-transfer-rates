@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import ProofPage from "@/app/proof/[id]/page";
+import { ProofContent } from "@/app/proof/[id]/page";
 import { getCorridor } from "@/lib/data";
 import { getLiveProof } from "@/lib/live-data";
 import { pageMetadata } from "@/lib/seo";
@@ -31,5 +31,5 @@ export default async function CorridorReceiptPage(
   if ((!live && !fallbackExists) || (live && String(live.corridor_slug) !== route)) {
     notFound();
   }
-  return ProofPage({ params: Promise.resolve({ id }) });
+  return ProofContent({ params: Promise.resolve({ id }) });
 }

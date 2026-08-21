@@ -5,13 +5,21 @@ export type Quote = {
   providerSlug: string;
   mark: string;
   sourceAmount?: number;
+  sourceCurrency?: string;
+  recipientCurrency?: string;
   rate: number;
   fee: number;
+  feeCurrency?: string;
   recipientGets: number;
   delivery: string;
   checkedAt: string;
+  capturedAt?: string;
   status: QuoteStatus;
   proofId: string;
+  fundingMethod?: string;
+  payoutMethod?: string;
+  promotion?: boolean;
+  eligibleForPriceRanking?: boolean;
   note?: string;
 };
 

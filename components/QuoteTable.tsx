@@ -5,6 +5,7 @@ import { hasProviderDestination } from "@/lib/affiliate";
 import { TopMoneyCompareRow } from "@/components/TopMoneyCompareRow";
 
 function compareQuotes(a: Quote, b: Quote) {
+  if (a.eligibleForPriceRanking !== b.eligibleForPriceRanking) return a.eligibleForPriceRanking ? -1 : 1;
   if (a.provider === "Xe") return -1;
   if (b.provider === "Xe") return 1;
   if (a.status === "verified" && b.status !== "verified") return -1;
@@ -68,8 +69,8 @@ export function QuoteTable({ corridor, compact = false }: { corridor: Corridor; 
                 </div>
                 {bestRated && <b className="best-tag">Best Rated</b>}
               </div>
-              <div className="rate-cell"><strong>{quote.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 })}</strong><small>Fee {money(quote.fee, corridor.fromCurrency)}</small></div>
-              <div className="gets-cell"><strong>{money(quote.recipientGets, corridor.toCurrency)}</strong><small>{quote.status === "verified" ? "Completed bank-transfer quote" : quote.status === "stale" ? "Due another check" : "Calculator evidence only"}</small></div>
+              <div className="rate-cell"><strong>{quote.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 })}</strong><small>Fee {money(quote.fee, quote.feeCurrency ?? corridor.fromCurrency)}</small></div>
+              <div className="gets-cell"><strong>{money(quote.recipientGets, corridor.toCurrency)}</strong><small>{quote.eligibleForPriceRanking ? "Comparable completed bank-transfer quote" : quote.promotion ? "Promotional quote, not ranked" : quote.status === "stale" ? "Due another standard-case check" : "Calculator evidence only"}</small></div>
               <div className="proof-cell">
                 <Link href={`/${corridor.slug}/receipts/${quote.proofId}/`} className={quote.status === "stale" ? "disabled-proof" : "proof-link"}>{quote.status === "stale" ? "Pending" : "Open receipt"}</Link>
                 <small>{quote.checkedAt}</small>

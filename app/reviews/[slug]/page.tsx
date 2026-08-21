@@ -42,7 +42,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
   if (!review) notFound();
 
   const evidence = await getProviderRateEvidence(review.slug);
-  const verified = evidence.filter((item) => item.quoteType === "verified");
+  const verified = evidence.filter((item) => item.eligibleForPriceRanking);
   const comparable = verified.filter((item) => item.bestVerifiedRecipient !== null && item.matchedCompetitors > 1);
   const wins = comparable.filter((item) => item.bestVerifiedProvider === review.name).length;
   const latest = evidence.reduce<string | null>((current, item) => !current || item.capturedAt > current ? item.capturedAt : current, null);
@@ -103,7 +103,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
             <section className="review-live-summary" aria-label="Live evidence summary">
               <header><span className="kicker">OUR RATE RECORDS</span><h2>What {review.name} has shown on monitored routes</h2></header>
               <div>
-                <article><strong>{evidence.length}</strong><span>routes with a current record</span></article>
+                <article><strong>{evidence.length}</strong><span>routes with a fresh standard-case record</span></article>
                 <article><strong>{verified.length}</strong><span>completed transfer quotes</span></article>
                 <article><strong>{comparable.length ? `${wins}/${comparable.length}` : "N/A"}</strong><span>like-for-like price wins</span></article>
                 <article><strong>{latest ? capturedLabel(latest).replace(" UTC", "") : "Pending"}</strong><span>latest provider check</span></article>
@@ -146,7 +146,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
                     <tbody>
                       {evidence.slice(0, 18).map((item) => {
                         const corridor = getCorridor(item.corridorSlug);
-                        const delta = item.bestVerifiedRecipient !== null && item.quoteType === "verified"
+                        const delta = item.bestVerifiedRecipient !== null && item.eligibleForPriceRanking
                           ? item.recipientAmount - item.bestVerifiedRecipient
                           : null;
                         return (
@@ -155,8 +155,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
                             <td>{money(item.sourceAmount, item.sourceCurrency)}</td>
                             <td>{money(item.feeAmount, item.feeCurrency)}</td>
                             <td><strong>{money(item.recipientAmount, item.recipientCurrency)}</strong><small>Rate {item.exchangeRate.toLocaleString("en-GB", { maximumFractionDigits: 6 })}</small></td>
-                            <td>{item.quoteType === "indicative" ? <span className="evidence-indicative">Calculator evidence</span> : delta === null ? "No like-for-like rival" : delta === 0 ? <b className="evidence-win">Best completed result</b> : <span>{money(delta, item.recipientCurrency)}</span>}</td>
-                            <td><Link href={`/proof/${item.id}`}>Open receipt</Link><small>{capturedLabel(item.capturedAt)}</small></td>
+                            <td>{!item.eligibleForPriceRanking ? <span className="evidence-indicative">Non-standard evidence, not ranked</span> : delta === null ? "No like-for-like rival" : delta === 0 ? <b className="evidence-win">Best completed result</b> : <span>{money(delta, item.recipientCurrency)}</span>}</td>
+                            <td><Link href={`/${item.corridorSlug}/receipts/${encodeURIComponent(item.id)}`}>Open receipt</Link><small>{capturedLabel(item.capturedAt)}</small></td>
                           </tr>
                         );
                       })}

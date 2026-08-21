@@ -46,6 +46,35 @@ test("renders production discovery metadata", async () => {
   );
 });
 
+test("redirects legacy corridor aliases and exposes canonical discovery files", async () => {
+  const worker = await loadWorker();
+  const legacy = await worker.fetch(new Request("http://localhost/corridors/uk-to-spain", { headers: { accept: "text/html" } }), bindings, context);
+  assert.equal(legacy.status, 308);
+  assert.match(legacy.headers.get("location") ?? "", /\/uk-to-spain$/);
+
+  const methodology = await worker.fetch(new Request("http://localhost/methodology", { headers: { accept: "text/html" } }), bindings, context);
+  const methodologyHtml = await methodology.text();
+  assert.equal(methodology.status, 200);
+  assert.match(methodologyHtml, /<link rel="canonical" href="https:\/\/onlinemoneytransfer\.co\.uk\/methodology"/);
+  assert.match(methodologyHtml, /<title>Money Transfer Comparison Methodology/);
+
+  for (const path of ["/llms.txt", "/llms-full.txt"]) {
+    const response = await worker.fetch(new Request(`http://localhost${path}`), bindings, context);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /^text\/plain/);
+    assert.match(await response.text(), /https:\/\/onlinemoneytransfer\.co\.uk/);
+  }
+
+  const robots = await (await worker.fetch(new Request("http://localhost/robots.txt"), bindings, context)).text();
+  assert.match(robots, /Allow: \/api\/v1\/rates\//);
+  assert.match(robots, /Allow: \/api\/research\//);
+  assert.doesNotMatch(robots, /Disallow: \/api\/$/m);
+
+  for (const path of ["../app/guides/[slug]/page.tsx", "../app/reviews/[slug]/page.tsx"]) {
+    assert.doesNotMatch(await readFile(new URL(path, import.meta.url), "utf8"), /href=\{\`\/proof\//);
+  }
+});
+
 test("renders SWIFT, BIC and country bank-detail checks", async () => {
   const worker = await loadWorker();
 
@@ -141,7 +170,7 @@ test("renders the free API documentation and exposes the public feed", async () 
   assert.equal(payload.useTerms.attributionRequired, true);
   assert.equal(
     payload.useTerms.requiredLink,
-    "https://onlinemoneytransfer.co.uk/uk-to-united-states/",
+    "https://onlinemoneytransfer.co.uk/uk-to-united-states",
   );
 
   const corridorResponse = await worker.fetch(

@@ -34,6 +34,16 @@ export function GET() {
 
 OnlineMoneyTransfer.co.uk is published by Finofin Limited. Its core dataset compares public money transfer prices using the same sending amount and payment route. A verified quote must show the source amount, recipient amount and visible fee on a provider-controlled journey. Indicative evidence is retained but cannot win the price ranking. Previous captures remain in the history.
 
+Canonical origin: ${siteUrl}
+
+## Comparison and citation rules
+
+- A current standard comparison uses one corridor case: the same sending amount, currencies, bank-transfer funding, bank-deposit payout and freshness window.
+- Only fresh, verified, non-promotional evidence that matches that case may win a price ranking.
+- Indicative, stale, cash-payout, promotional and mismatched-amount evidence remains available as historical or contextual evidence but is not directly ranked.
+- When citing a rate, include the provider, corridor, sending amount, recipient amount, funding and payout methods, fee, fee currency and UTC timestamp.
+- Receipt pages expose these fields in crawlable HTML. A historical receipt is evidence of a past capture, not a current quote.
+
 ## Corridor comparisons
 
 ${corridorLinks}

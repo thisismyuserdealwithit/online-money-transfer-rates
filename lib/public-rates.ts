@@ -1,4 +1,6 @@
 import { query } from "@/lib/platform-runtime";
+import type { Corridor } from "@/lib/data";
+import { isFreshComparableCase, isRankEligible } from "@/lib/comparison-case";
 
 export const OMT_PUBLIC_ORIGIN = "https://onlinemoneytransfer.co.uk";
 export const OMT_API_VERSION = "1.0";
@@ -55,20 +57,16 @@ export type PublicSnapshot = {
   rates: PublicRate[];
 };
 
-const STALE_AFTER_MS = 36 * 60 * 60 * 1000;
-
-function statusFor(row: RateRow): PublicRate["status"] {
-  const captured = Date.parse(row.captured_at);
-  if (
-    row.status === "stale"
-    || !Number.isFinite(captured)
-    || Date.now() - captured > STALE_AFTER_MS
-  ) return "stale";
+function statusFor(row: RateRow, corridor: Corridor): PublicRate["status"] {
+  if (!isFreshComparableCase(corridor, {
+    corridorSlug: corridor.slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+    recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+  })) return "stale";
   return row.quote_type;
 }
 
-function toPublicRate(row: RateRow, corridorSlug: string): PublicRate {
-  const status = statusFor(row);
+function toPublicRate(row: RateRow, corridor: Corridor): PublicRate {
+  const status = statusFor(row, corridor);
   const promotion = Number(row.promotion) === 1;
   return {
     id: row.id,
@@ -76,7 +74,13 @@ function toPublicRate(row: RateRow, corridorSlug: string): PublicRate {
     providerSlug: row.provider_slug,
     quoteType: row.quote_type,
     status,
-    eligibleForPriceRanking: status === "verified" && !promotion,
+    eligibleForPriceRanking: isRankEligible(corridor, {
+      corridorSlug: corridor.slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+    recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+      recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
+      fundingMethod: row.funding_method, payoutMethod: row.payout_method,
+      quoteType: row.quote_type, promotion, providerSlug: row.provider_slug,
+    }),
     sourceAmount: Number(row.source_amount),
     sourceCurrency: row.source_currency,
     recipientAmount: Number(row.recipient_amount),
@@ -90,16 +94,16 @@ function toPublicRate(row: RateRow, corridorSlug: string): PublicRate {
     pricingBasis: row.plan_name,
     promotion,
     capturedAt: row.captured_at,
-    receiptUrl: `${OMT_PUBLIC_ORIGIN}/${corridorSlug}/receipts/${encodeURIComponent(row.id)}/`,
+    receiptUrl: `${OMT_PUBLIC_ORIGIN}/${corridor.slug}/receipts/${encodeURIComponent(row.id)}`,
   };
 }
 
 function compareRates(a: PublicRate, b: PublicRate) {
-  if (a.providerSlug === "xe" && b.providerSlug !== "xe") return -1;
-  if (b.providerSlug === "xe" && a.providerSlug !== "xe") return 1;
   if (a.eligibleForPriceRanking !== b.eligibleForPriceRanking) {
     return a.eligibleForPriceRanking ? -1 : 1;
   }
+  if (a.providerSlug === "xe" && b.providerSlug !== "xe") return -1;
+  if (b.providerSlug === "xe" && a.providerSlug !== "xe") return 1;
   if (a.status !== "stale" && b.status === "stale") return -1;
   if (b.status !== "stale" && a.status === "stale") return 1;
   return b.recipientAmount - a.recipientAmount;
@@ -109,23 +113,29 @@ function snapshot(
   id: string,
   kind: PublicSnapshot["kind"],
   rows: RateRow[],
-  corridorSlug: string,
+  corridor: Corridor,
 ): PublicSnapshot {
   const latestByProvider = new Map<string, RateRow>();
   for (const row of rows) {
+    if (kind === "current" && !isFreshComparableCase(corridor, {
+      corridorSlug: corridor.slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
+      recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
+    })) continue;
     const saved = latestByProvider.get(row.provider_slug);
     if (!saved || Date.parse(row.captured_at) > Date.parse(saved.captured_at)) {
       latestByProvider.set(row.provider_slug, row);
     }
   }
-  const rates = [...latestByProvider.values()]
-    .map((row) => toPublicRate(row, corridorSlug))
+  const selected = [...latestByProvider.values()];
+  const rates = selected
+    .map((row) => toPublicRate(row, corridor))
     .sort(compareRates);
   const capturedAt = rates.map((rate) => rate.capturedAt).sort().at(-1) ?? null;
   return { id, kind, capturedAt, rates };
 }
 
-export async function getPublicRates(corridorSlug: string, limit: number) {
+export async function getPublicRates(corridor: Corridor, limit: number) {
+  const corridorSlug = corridor.slug;
   const historyLimit = Math.max(1, Math.min(30, Math.trunc(limit)));
   try {
     const rows = await query<RateRow>(`
@@ -157,12 +167,12 @@ export async function getPublicRates(corridorSlug: string, limit: number) {
       byRun.set(row.crawl_run_id, run);
     }
     const history = [...byRun.entries()]
-      .map(([id, run]) => snapshot(id, "crawl-run", run, corridorSlug))
+      .map(([id, run]) => snapshot(id, "crawl-run", run, corridor))
       .sort((a, b) => Date.parse(b.capturedAt ?? "") - Date.parse(a.capturedAt ?? ""))
       .slice(0, historyLimit);
 
     return {
-      current: snapshot("current", "current", rows, corridorSlug),
+      current: snapshot("current", "current", rows, corridor),
       history,
     };
   } catch {

@@ -33,17 +33,17 @@ export default async function CoveragePage() {
           <div className="shell">
             <span className="kicker">WHAT THE CHECKER FOUND</span>
             <h1>The completed quotes, the calculator rates and the failures</h1>
-            <p>This ledger reads the live archive. A route counts only after a provider record and its receipt are stored, which is less flattering than counting every logo on a comparison page.</p>
+            <p>This ledger counts only fresh evidence for each route&apos;s published standard test amount and currency pair. Older, promotional and different-amount receipts remain in history rather than inflating current coverage.</p>
             <div className="coverage-summary">
               <article><strong>{populated}/{corridors.length}</strong><span>routes with stored evidence</span></article>
-              <article><strong>{totalProviders}</strong><span>current company records</span></article>
+              <article><strong>{totalProviders}</strong><span>fresh standard-case company records</span></article>
               <article><strong>{checkedLabel(latest)}</strong><span>freshest receipt</span></article>
             </div>
           </div>
         </section>
 
         <section className="section shell">
-          <div className="section-heading"><div><span className="kicker">ROUTE BY ROUTE</span><h2>Where we have a price we can stand behind</h2><p>A verified result completed the transfer calculator. An indicative row may come from a converter or a modelled bank price, and is labelled accordingly.</p></div></div>
+          <div className="section-heading"><div><span className="kicker">ROUTE BY ROUTE</span><h2>Where we have a price we can stand behind</h2><p>Counts use fresh evidence for the configured amount and currencies only. A verified result completed the standard bank-transfer case; indicative evidence remains clearly labelled.</p></div></div>
           <div className="coverage-table">
             <div className="coverage-head"><span>Route</span><span>Companies found</span><span>Type of evidence</span><span>Most recent receipt</span></div>
             {corridors.map((corridor) => {

@@ -6,6 +6,8 @@ import {
   runtimeValue,
   type SqlStatement,
 } from "@/lib/platform-runtime";
+import { getCorridor } from "@/lib/data";
+import { matchesConfiguredTransferCase } from "@/lib/comparison-case";
 
 type IngestPayload = {
   kind?: "quote" | "quote-batch" | "run-summary";
@@ -86,7 +88,7 @@ function normalizeQuote(body: IngestPayload): NormalizedQuote {
   if (!Number.isFinite(Date.parse(capturedAt))) throw new Error("capturedAt is invalid");
   const quoteUrl = requiredString(body.quoteUrl, "quoteUrl", 1000);
   if (!quoteUrl.startsWith("https://")) throw new Error("quoteUrl must use https");
-  return {
+  const normalized: NormalizedQuote = {
     id, crawlRunId, corridorSlug, sourceCountry, destinationCountry, providerSlug,
     providerName, providerHomepage, quoteType, sourceAmount, sourceCurrency,
     recipientAmount, recipientCurrency, feeAmount, feeCurrency, exchangeRate,
@@ -97,6 +99,12 @@ function normalizeQuote(body: IngestPayload): NormalizedQuote {
     promotion: body.promotion ? 1 : 0,
     rawPayload: JSON.stringify(body.raw ?? {}),
   };
+  const corridor = getCorridor(corridorSlug);
+  if (!corridor) throw new Error("corridorSlug is not a configured corridor");
+  if (!matchesConfiguredTransferCase(corridor, normalized)) {
+    throw new Error(`Quote must match the configured ${corridor.testAmount} ${corridor.fromCurrency} to ${corridor.toCurrency} transfer case`);
+  }
+  return normalized;
 }
 
 export async function POST(request: Request) {
@@ -225,28 +233,10 @@ export async function POST(request: Request) {
       }
       return Response.json({ stored: true, received: quotes.length, inserted: fresh.length, screenshotSha256: digest }, { status: 201 });
     }
-    const id = requiredString(body.id, "id", 100);
-    const crawlRunId = requiredString(body.crawlRunId, "crawlRunId", 100);
-    const corridorSlug = requiredString(body.corridorSlug, "corridorSlug", 100);
-    const sourceCountry = requiredString(body.sourceCountry, "sourceCountry", 100);
-    const destinationCountry = requiredString(body.destinationCountry, "destinationCountry", 100);
-    const providerSlug = requiredString(body.providerSlug, "providerSlug", 60);
-    const providerName = requiredString(body.providerName, "providerName", 100);
-    const providerHomepage = requiredString(body.providerHomepage, "providerHomepage", 500);
-    const quoteType = body.quoteType === "verified" ? "verified" : "indicative";
-    const sourceAmount = amount(body.sourceAmount, "sourceAmount");
-    const sourceCurrency = currency(body.sourceCurrency, "sourceCurrency");
-    const recipientAmount = amount(body.recipientAmount, "recipientAmount");
-    const recipientCurrency = currency(body.recipientCurrency, "recipientCurrency");
-    const feeAmount = amount(body.feeAmount ?? 0, "feeAmount");
-    const feeCurrency = currency(body.feeCurrency ?? sourceCurrency, "feeCurrency");
-    const exchangeRate = amount(body.exchangeRate, "exchangeRate");
-    const fundingMethod = requiredString(body.fundingMethod, "fundingMethod", 60);
-    const payoutMethod = requiredString(body.payoutMethod, "payoutMethod", 60);
-    const capturedAt = requiredString(body.capturedAt, "capturedAt", 40);
-    if (!Number.isFinite(Date.parse(capturedAt))) throw new Error("capturedAt is invalid");
-    const quoteUrl = requiredString(body.quoteUrl, "quoteUrl", 1000);
-    if (!quoteUrl.startsWith("https://")) throw new Error("quoteUrl must use https");
+    const quote = normalizeQuote(body);
+    const { id, crawlRunId, corridorSlug, sourceCountry, destinationCountry, providerSlug, providerName,
+      providerHomepage, quoteType, sourceAmount, sourceCurrency, recipientAmount, recipientCurrency,
+      feeAmount, feeCurrency, exchangeRate, fundingMethod, payoutMethod, capturedAt, quoteUrl } = quote;
     const screenshotBase64 = requiredString(body.screenshotBase64, "screenshotBase64", 9_000_000);
     const mime = body.screenshotMimeType === "image/jpeg" ? "image/jpeg" : "image/png";
     const screenshot = bytesFromBase64(screenshotBase64);
@@ -255,7 +245,7 @@ export async function POST(request: Request) {
     const extension = mime === "image/jpeg" ? "jpg" : "png";
     const screenshotKey = `proof/${corridorSlug}/${capturedAt.slice(0, 10)}/${id}.${extension}`;
     const now = new Date().toISOString();
-    const previousStatus = body.invalidatesPreviousCurrent ? "invalid" : "stale";
+    const previousStatus = quote.previousStatus;
     const existing = await queryOne<{ id: string; screenshot_sha256: string }>(`
       SELECT id, screenshot_sha256
       FROM quotes
@@ -309,7 +299,7 @@ export async function POST(request: Request) {
           exchange_rate, delivery_estimate, funding_method, payout_method, plan_name, promotion,
           captured_at, quote_url, screenshot_key, screenshot_sha256, raw_payload, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        params: [id, crawlRunId, corridorSlug, providerSlug, providerName, quoteType, becomesCurrent ? "current" : "stale", sourceAmount, sourceCurrency, recipientAmount, recipientCurrency, feeAmount, feeCurrency, exchangeRate, body.deliveryEstimate ?? null, fundingMethod, payoutMethod, body.planName ?? null, body.promotion ? 1 : 0, capturedAt, quoteUrl, screenshotKey, digest, JSON.stringify(body.raw ?? {}), now],
+        params: [id, crawlRunId, corridorSlug, providerSlug, providerName, quoteType, becomesCurrent ? "current" : "stale", sourceAmount, sourceCurrency, recipientAmount, recipientCurrency, feeAmount, feeCurrency, exchangeRate, quote.deliveryEstimate, fundingMethod, payoutMethod, quote.planName, quote.promotion, capturedAt, quoteUrl, screenshotKey, digest, quote.rawPayload, now],
       },
       {
         sql: "UPDATE crawl_runs SET attempted = attempted + 1, succeeded = succeeded + 1 WHERE id = ?",

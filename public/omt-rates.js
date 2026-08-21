@@ -89,15 +89,16 @@
             : rate.status === "stale"
               ? "Due another check"
               : "Calculator evidence only";
+          var transferCase = money(rate.sourceAmount, rate.sourceCurrency) + " · " + rate.fundingMethod + " to " + rate.payoutMethod + (rate.promotion ? " · promotion, not ranked" : "");
           return '<div class="row ' + (rate.providerSlug === "xe" ? "xe " : "") + (rate.status === "stale" ? "stale" : "") + '">' +
-            '<div class="provider"><span class="mark">' + escapeHtml(mark(rate.provider)) + '</span><span>' + escapeHtml(rate.provider) + "<small>" + escapeHtml(state) + "</small></span>" + (rate.providerSlug === "xe" ? '<span class="tag">Best Rated</span>' : "") + "</div>" +
+            '<div class="provider"><span class="mark">' + escapeHtml(mark(rate.provider)) + '</span><span>' + escapeHtml(rate.provider) + "<small>" + escapeHtml(state + " · " + transferCase) + "</small></span>" + (rate.providerSlug === "xe" ? '<span class="tag">Best Rated</span>' : "") + "</div>" +
             '<div class="number"><strong>' + escapeHtml(Number(rate.exchangeRate).toLocaleString("en-GB", { maximumFractionDigits: 6 })) + '</strong><small>Fee ' + escapeHtml(money(rate.feeAmount, rate.feeCurrency)) + "</small></div>" +
             '<div class="number"><strong>' + escapeHtml(money(rate.recipientAmount, rate.recipientCurrency)) + '</strong><small>Recipient gets</small></div>' +
             '<a class="receipt" href="' + escapeHtml(rate.receiptUrl) + '" target="_blank" rel="noopener">Receipt ↗</a></div>';
         }).join("");
         var label = view.kind === "current" ? "Latest available per company" : "Stored comparison check";
         root.innerHTML = styles() + '<section class="card" aria-live="polite"><header><div><span class="brand">Online Money Transfer rates</span><strong class="route">' +
-          escapeHtml(payload.corridor.fromCountry) + " → " + escapeHtml(payload.corridor.toCountry) +
+          escapeHtml(payload.corridor.fromCountry) + " → " + escapeHtml(payload.corridor.toCountry) + " · standard test " + escapeHtml(money(payload.corridor.standardTestAmount, payload.corridor.fromCurrency)) +
           '</strong></div><div class="stamp"><b>' + escapeHtml(label) + "</b>" + escapeHtml(checkedAt(view.capturedAt)) + "</div></header>" +
           (rows ? '<div class="head"><span>Company</span><span>Rate and fee</span><span>What arrives</span><span>Evidence</span></div>' + rows : '<div class="empty">No completed rates are stored for this check yet.</div>') +
           '<footer><div class="nav"><button type="button" data-newer' + (index === 0 ? " disabled" : "") + '>← Newer</button><button type="button" data-older' + (index >= snapshots.length - 1 ? " disabled" : "") + '>Older →</button></div>' +

@@ -1,9 +1,8 @@
 import type { MetadataRoute } from "next";
-import { corridors } from "@/lib/data";
 import { bankDetailsProfiles } from "@/lib/bank-details";
 import { guides } from "@/lib/guides";
 import { providerReviews } from "@/lib/reviews";
-import { getCoverageDashboard, getProviderCoverage } from "@/lib/live-data";
+import { getCoverageDashboard, getIndexableCorridorSlugs, getProviderCoverage } from "@/lib/live-data";
 import { siteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +10,10 @@ export const dynamic = "force-dynamic";
 const contentUpdated = new Date("2026-07-31T00:00:00.000Z");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [dashboard, providerCoverage] = await Promise.all([
+  const [dashboard, providerCoverage, corridorSlugs] = await Promise.all([
     getCoverageDashboard(),
     getProviderCoverage(),
+    getIndexableCorridorSlugs(),
   ]);
   const corridorUpdated = new Map(
     dashboard.corridors.map((row) => [row.corridorSlug, row.latestCapturedAt]),
@@ -67,10 +67,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/affiliate-disclosure`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.3 },
     { url: `${siteUrl}/cookie-policy`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.2 },
     { url: `${siteUrl}/privacy`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.2 },
-    ...corridors.map((corridor) => ({
-      url: `${siteUrl}/${corridor.slug}/`,
-      lastModified: corridorUpdated.get(corridor.slug)
-        ? new Date(corridorUpdated.get(corridor.slug)!)
+    ...corridorSlugs.map((slug) => ({
+      url: `${siteUrl}/${slug}/`,
+      lastModified: corridorUpdated.get(slug)
+        ? new Date(corridorUpdated.get(slug)!)
         : contentUpdated,
       changeFrequency: "daily" as const,
       priority: 0.85,

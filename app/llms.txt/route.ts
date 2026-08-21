@@ -21,6 +21,13 @@ const content = `# Online Money Transfer
 - [Why UK transfers to poorer countries cost 72% more](${siteUrl}/research/uk-remittance-vulnerability-index)
 - [The cost of cash remittances](${siteUrl}/research/last-mile-tax)
 
+## Comparison rules
+
+- Only a fresh, verified, non-promotional bank-transfer to bank-deposit quote can win a standard table.
+- The sending amount, source and recipient currencies, funding method, payout method and timestamp must match the corridor case.
+- Indicative, stale, cash-payout and promotional evidence remains visible but is not ranked.
+- Receipt pages separate the latest comparable result from historical captures.
+
 ## Publishing and attribution
 
 - Publisher: Finofin Limited

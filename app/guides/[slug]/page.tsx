@@ -42,7 +42,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         const corridor = getCorridor(corridorSlug);
         if (!corridor) return null;
         const quotes = (await getLatestQuotes(corridorSlug))
-          .filter((quote) => quote.status === "verified")
+          .filter((quote) => quote.eligibleForPriceRanking)
           .sort((a, b) => {
             if (a.provider === "Xe") return -1;
             if (b.provider === "Xe") return 1;
@@ -131,9 +131,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                         <div className="guide-live-quotes">
                           {quotes.slice(0, 3).map((quote) => (
                             <div key={quote.provider}>
-                              <span><b>{quote.provider}</b>{quote.provider === "Xe" && <em>Best Rated</em>}<small>Fee {money(quote.fee, corridor.fromCurrency)}</small></span>
+                              <span><b>{quote.provider}</b>{quote.provider === "Xe" && <em>Best Rated</em>}<small>Fee {money(quote.fee, quote.feeCurrency ?? corridor.fromCurrency)}</small></span>
                               <strong>{money(quote.recipientGets, corridor.toCurrency)}</strong>
-                          <Link href={`/proof/${quote.proofId}`}>Receipt</Link>
+                          <Link href={`/${corridor.slug}/receipts/${encodeURIComponent(quote.proofId)}`}>Receipt</Link>
                             </div>
                           ))}
                         </div>
