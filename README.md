@@ -136,3 +136,7 @@ npm run render:start
 6. A provider name is not treated as a quote until a reproducible result has been captured.
 
 See [CRAWLER.md](CRAWLER.md) for provider-specific capture rules and operational notes.
+
+## Versioned research releases
+
+Citation-ready snapshots with methodology, attribution and checksums are maintained under [`research-releases/`](research-releases/README.md). These packages preserve the evidence date and should not be treated as live consumer quotes.

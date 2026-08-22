@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this dataset, cite it and the World Bank source datasets."
+title: "The Last Mile Tax 2026 data release"
+type: dataset
+version: 1.0.0
+date-released: 2026-08-23
+authors:
+  - name: "Online Money Transfer"
+  - name: "Finofin Limited"
+url: "https://onlinemoneytransfer.co.uk/research/last-mile-tax"
+license: CC-BY-4.0
+keywords:
+  - remittances
+  - transfer costs
+  - cash collection
+  - financial inclusion
+
