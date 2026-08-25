@@ -44,6 +44,8 @@ test("renders production discovery metadata", async () => {
     html,
     /<meta(?=[^>]*\bproperty=["']og:url["'])(?=[^>]*\bcontent=["']https:\/\/onlinemoneytransfer\.co\.uk\/["'])[^>]*>/i,
   );
+  assert.match(html, /href="\/uk-to-spain"/);
+  assert.doesNotMatch(html, /href="\/uk-to-hong-kong"/);
 });
 
 test("redirects legacy corridor aliases and exposes canonical discovery files", async () => {

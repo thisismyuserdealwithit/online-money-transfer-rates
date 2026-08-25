@@ -6,6 +6,7 @@ import { QuoteTable } from "@/components/QuoteTable";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridorGroups, corridors, money } from "@/lib/data";
+import { isPublishedCorridor } from "@/lib/corridor-publication";
 import { getLatestQuotes } from "@/lib/live-data";
 import { defaultDescription, pageMetadata } from "@/lib/seo";
 
@@ -30,6 +31,10 @@ function CorridorGrid({ items }: { items: typeof corridors }) {
     </div>
   );
 }
+
+const publishedUkCorridors = corridorGroups["from-uk"].filter((corridor) =>
+  isPublishedCorridor(corridor.slug),
+);
 
 export default async function Home() {
   const featuredBase = corridors[0];
@@ -98,12 +103,9 @@ export default async function Home() {
         </section>
 
         <section className="section shell corridor-section">
-          <div className="section-heading"><div><span className="kicker">UNITED KINGDOM</span><h2>Sending pounds abroad</h2><p>Current GBP comparisons for the routes UK customers use most.</p></div></div>
-          <CorridorGrid items={corridorGroups["from-uk"]} />
-          <div className="section-heading corridor-subheading"><div><span className="kicker">INBOUND</span><h2>Bringing money into the UK</h2><p>The same receipt test, this time with pounds arriving at the other end.</p></div></div>
-          <CorridorGrid items={corridorGroups["to-uk"]} />
-          <div className="section-heading corridor-subheading"><div><span className="kicker">MAJOR GLOBAL ROUTES</span><h2>Useful comparisons beyond sterling</h2><p>We also watch the large routes between Europe and the United States, plus North America and Australasia.</p></div></div>
-          <CorridorGrid items={corridorGroups.major} />
+          <div className="section-heading"><div><span className="kicker">PUBLISHED COMPARISONS</span><h2>Sending pounds abroad</h2><p>Reviewed GBP routes with a stable place in our public index.</p></div></div>
+          <CorridorGrid items={publishedUkCorridors} />
+          <p className="data-caveat">We monitor more inbound and international routes too. Use the route finder above to inspect them while their comparison evidence is still being reviewed for publication.</p>
         </section>
         <CompanyTrust />
       </main>
