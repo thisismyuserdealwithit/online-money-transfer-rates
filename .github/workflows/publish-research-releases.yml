@@ -1,0 +1,47 @@
+name: Publish citable research releases
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-research-releases.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the validated research releases
+        uses: actions/checkout@v4
+
+      - name: Create the remittance vulnerability release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="omt-remittance-vulnerability-index-2026-v1.0.0"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            exit 0
+          fi
+          cd research-releases
+          zip -r ../omt-remittance-vulnerability-index-2026-v1.0.0.zip             omt-remittance-vulnerability-index-2026-v1.0.0
+          cd ..
+          gh release create "$tag"             "omt-remittance-vulnerability-index-2026-v1.0.0.zip#Versioned research bundle"             --target "c8776b3ffd854f2e49d28d31d73b217226019080"             --title "UK Remittance Vulnerability Index 2026 v1.0.0"             --notes "A dated release separating official corridor prices, macro indicators, provider comparisons and timestamped quote evidence. Canonical research: https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index. Preserved DOI: https://doi.org/10.5281/zenodo.22080333."
+
+      - name: Create the Last Mile Tax release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="omt-last-mile-tax-2026-v1.0.0"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            exit 0
+          fi
+          cd research-releases
+          zip -r ../omt-last-mile-tax-2026-v1.0.0.zip omt-last-mile-tax-2026-v1.0.0
+          cd ..
+          gh release create "$tag"             "omt-last-mile-tax-2026-v1.0.0.zip#Versioned research bundle"             --target "c8776b3ffd854f2e49d28d31d73b217226019080"             --title "The Last Mile Tax 2026 v1.0.0"             --notes "A dated research release covering 33 UK outbound remittance corridors and 17 strictly matched cash-versus-account offers. Canonical research: https://onlinemoneytransfer.co.uk/research/last-mile-tax. Preserved DOI: https://doi.org/10.5281/zenodo.22080315."
