@@ -1,0 +1,67 @@
+{
+  "aid": "onlinemoneytransfer.co.uk:api-index",
+  "name": "Online Money Transfer Public APIs",
+  "description": "Free current and historical money transfer rate evidence from OnlineMoneyTransfer.co.uk.",
+  "image": "https://onlinemoneytransfer.co.uk/favicon.svg",
+  "url": "https://onlinemoneytransfer.co.uk/.well-known/apis.json",
+  "type": "Index",
+  "kind": "company",
+  "created": "2026-07-27",
+  "modified": "2026-08-26",
+  "specificationVersion": "0.23",
+  "tags": ["money-transfer", "exchange-rates", "remittance", "finance", "open-data"],
+  "maintainers": [
+    {
+      "FN": "Finofin Limited",
+      "url": "https://onlinemoneytransfer.co.uk/about"
+    }
+  ],
+  "common": [
+    {
+      "type": "TermsOfService",
+      "url": "https://onlinemoneytransfer.co.uk/api/terms"
+    },
+    {
+      "type": "PrivacyPolicy",
+      "url": "https://onlinemoneytransfer.co.uk/privacy"
+    }
+  ],
+  "apis": [
+    {
+      "aid": "onlinemoneytransfer.co.uk:rates",
+      "name": "Online Money Transfer Rates API",
+      "description": "Current and historical provider comparisons with timestamps, ranking eligibility and receipt links.",
+      "image": "https://onlinemoneytransfer.co.uk/favicon.svg",
+      "humanURL": "https://onlinemoneytransfer.co.uk/api",
+      "baseURL": "https://onlinemoneytransfer.co.uk/api/v1/rates",
+      "version": "1.0",
+      "tags": ["money-transfer", "exchange-rates", "remittance", "historical-rates"],
+      "properties": [
+        {
+          "type": "Documentation",
+          "url": "https://onlinemoneytransfer.co.uk/api"
+        },
+        {
+          "type": "OpenAPI",
+          "url": "https://onlinemoneytransfer.co.uk/openapi.json"
+        },
+        {
+          "type": "PostmanCollection",
+          "url": "https://onlinemoneytransfer.co.uk/omt-rates.postman_collection.json"
+        },
+        {
+          "type": "SDKs",
+          "url": "https://onlinemoneytransfer.co.uk/api#resources"
+        },
+        {
+          "type": "GitHubRepository",
+          "url": "https://github.com/thisismyuserdealwithit/online-money-transfer-rates"
+        },
+        {
+          "type": "TermsOfService",
+          "url": "https://onlinemoneytransfer.co.uk/api/terms"
+        }
+      ]
+    }
+  ]
+}

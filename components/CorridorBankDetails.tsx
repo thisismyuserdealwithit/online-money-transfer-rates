@@ -43,9 +43,9 @@ export function CorridorBankDetails({ corridor }: { corridor: Corridor }) {
           <BankDetailsChecker profile={profile} compact />
         </details>
         <div>
-          <Link href={`/bank-details/${profile.slug}/`}>Full {profile.country} checklist</Link>
-          <Link href="/swift-codes/">SWIFT guide</Link>
-          <Link href="/bic-codes/">BIC checker</Link>
+          <Link href={`/bank-details/${profile.slug}`}>Full {profile.country} checklist</Link>
+          <Link href="/swift-codes">SWIFT guide</Link>
+          <Link href="/bic-codes">BIC checker</Link>
         </div>
       </div>
 

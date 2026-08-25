@@ -1,0 +1,44 @@
+{
+  "name": "online-money-transfer-rates",
+  "version": "0.1.0",
+  "description": "Dependency-free JavaScript client for the free Online Money Transfer rates API.",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/client.test.mjs"
+  },
+  "keywords": [
+    "money-transfer",
+    "exchange-rates",
+    "remittance",
+    "api-client"
+  ],
+  "author": "Finofin Limited",
+  "license": "MIT",
+  "homepage": "https://onlinemoneytransfer.co.uk/api",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thisismyuserdealwithit/online-money-transfer-rates.git",
+    "directory": "sdk/javascript"
+  },
+  "bugs": {
+    "url": "https://github.com/thisismyuserdealwithit/online-money-transfer-rates/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

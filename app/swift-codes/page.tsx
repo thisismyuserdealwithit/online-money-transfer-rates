@@ -9,7 +9,7 @@ import { pageMetadata, siteUrl } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "SWIFT Codes for International Transfers",
   description: "Understand SWIFT codes, check the bank-country characters and find the account details required for every destination covered by Online Money Transfer.",
-  path: "/swift-codes/",
+  path: "/swift-codes",
 });
 
 const facts = [
@@ -26,7 +26,7 @@ export default function SwiftCodesPage() {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-          { "@type": "ListItem", position: 2, name: "SWIFT codes", item: `${siteUrl}/swift-codes/` },
+          { "@type": "ListItem", position: 2, name: "SWIFT codes", item: `${siteUrl}/swift-codes` },
         ],
       },
       {
@@ -102,7 +102,7 @@ export default function SwiftCodesPage() {
             </div>
             <div className="codes-country-grid">
               {bankDetailsProfiles.map((profile) => (
-                <Link href={`/bank-details/${profile.slug}/`} key={profile.slug}>
+                <Link href={`/bank-details/${profile.slug}`} key={profile.slug}>
                   <span>{profile.countryCode}</span>
                   <strong>{profile.country}</strong>
                   <small>{profile.accountFormat}</small>
@@ -128,7 +128,7 @@ export default function SwiftCodesPage() {
             <div>
               <a href="https://www.swift.com/standards/data-standards/bic-business-identifier-code" target="_blank" rel="noopener noreferrer">SWIFT BIC standard ↗</a>
               <a href="https://www.swift.com/standards/standards-resources" target="_blank" rel="noopener noreferrer">SWIFT IBAN Registry ↗</a>
-              <Link href="/bic-codes/">Use the format checker →</Link>
+              <Link href="/bic-codes">Use the format checker →</Link>
             </div>
           </section>
 

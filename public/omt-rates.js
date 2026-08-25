@@ -89,7 +89,7 @@
             : rate.status === "stale"
               ? "Due another check"
               : "Calculator evidence only";
-          var transferCase = money(rate.sourceAmount, rate.sourceCurrency) + " · " + rate.fundingMethod + " to " + rate.payoutMethod + (rate.promotion ? " · promotion, not ranked" : "");
+          var transferCase = money(rate.sourceAmount, rate.sourceCurrency) + " · " + rate.fundingMethod + " to " + rate.payoutMethod + (rate.promotion ? " · promotion, not ranked" : "") + " · captured " + checkedAt(rate.capturedAt);
           return '<div class="row ' + (rate.providerSlug === "xe" ? "xe " : "") + (rate.status === "stale" ? "stale" : "") + '">' +
             '<div class="provider"><span class="mark">' + escapeHtml(mark(rate.provider)) + '</span><span>' + escapeHtml(rate.provider) + "<small>" + escapeHtml(state + " · " + transferCase) + "</small></span>" + (rate.providerSlug === "xe" ? '<span class="tag">Best Rated</span>' : "") + "</div>" +
             '<div class="number"><strong>' + escapeHtml(Number(rate.exchangeRate).toLocaleString("en-GB", { maximumFractionDigits: 6 })) + '</strong><small>Fee ' + escapeHtml(money(rate.feeAmount, rate.feeCurrency)) + "</small></div>" +
@@ -112,7 +112,7 @@
       render();
       return { element: target, data: payload };
     }).catch(function (error) {
-      root.innerHTML = styles() + '<div class="card"><div class="error">The rate feed is temporarily unavailable. <a href="https://onlinemoneytransfer.co.uk/' + encodeURIComponent(route) + '/" target="_blank" rel="noopener">Open this corridor on OMT ↗</a></div></div>';
+      root.innerHTML = styles() + '<div class="card"><div class="error">The rate feed is temporarily unavailable. <a href="https://onlinemoneytransfer.co.uk/' + encodeURIComponent(route) + '" target="_blank" rel="noopener">Open this corridor on OMT ↗</a></div></div>';
       throw error;
     });
   }

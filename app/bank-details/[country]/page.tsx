@@ -22,7 +22,7 @@ export async function generateMetadata(
   return pageMetadata({
     title: `Bank Details Needed to Send Money to ${profile.country}`,
     description: `Check the account, IBAN, local bank-code and SWIFT/BIC formats commonly requested when sending money to ${profile.country}.`,
-    path: `/bank-details/${profile.slug}/`,
+    path: `/bank-details/${profile.slug}`,
   });
 }
 
@@ -46,15 +46,15 @@ export default async function CountryBankDetailsPage(
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-          { "@type": "ListItem", position: 2, name: "SWIFT codes", item: `${siteUrl}/swift-codes/` },
-          { "@type": "ListItem", position: 3, name: `${profile.country} bank details`, item: `${siteUrl}/bank-details/${profile.slug}/` },
+          { "@type": "ListItem", position: 2, name: "SWIFT codes", item: `${siteUrl}/swift-codes` },
+          { "@type": "ListItem", position: 3, name: `${profile.country} bank details`, item: `${siteUrl}/bank-details/${profile.slug}` },
         ],
       },
       {
         "@type": "Dataset",
         name: `Bank-detail formats for transfers to ${profile.country}`,
         description: `Recipient account identifiers and format rules commonly requested for transfers to ${profile.country}.`,
-        url: `${siteUrl}/bank-details/${profile.slug}/`,
+        url: `${siteUrl}/bank-details/${profile.slug}`,
         creator: { "@id": `${siteUrl}/#organisation` },
         dateModified: "2026-07-31",
         variableMeasured: profile.fields.map((item) => item.label),
@@ -68,7 +68,7 @@ export default async function CountryBankDetailsPage(
       <main>
         <section className="bank-country-hero">
           <div className="shell">
-            <div className="crumbs"><Link href="/">Home</Link><span>›</span><Link href="/swift-codes/">SWIFT codes</Link><span>›</span><b>{profile.country}</b></div>
+            <div className="crumbs"><Link href="/">Home</Link><span>›</span><Link href="/swift-codes">SWIFT codes</Link><span>›</span><b>{profile.country}</b></div>
             <div className="bank-country-title">
               <div>
                 <span className="country-code-mark">{profile.countryCode}</span>
@@ -130,7 +130,7 @@ export default async function CountryBankDetailsPage(
               <div className="section-heading"><div><span className="kicker">LIVE RATE PAGES</span><h2>Compare transfers linked to {profile.country}</h2><p>Once the details are confirmed, compare what the recipient gets and open the proof behind each quote.</p></div></div>
               <div>
                 {relatedCorridors.map((corridor) => (
-                  <Link href={`/${corridor.slug}/`} key={corridor.slug}>
+                  <Link href={`/${corridor.slug}`} key={corridor.slug}>
                     <span>{corridor.fromCode} → {corridor.toCode}</span>
                     <strong>{corridor.fromCountry} to {corridor.toCountry}</strong>
                     <small>{corridor.fromCurrency} to {corridor.toCurrency} rates</small>

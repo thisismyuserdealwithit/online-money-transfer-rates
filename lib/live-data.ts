@@ -1,6 +1,6 @@
 import { query, queryOne } from "@/lib/platform-runtime";
-import { corridors, getCorridor, type Quote } from "@/lib/data";
-import { COMPARISON_FRESHNESS_MS, hasIndexableComparison, isFreshComparableCase, isRankEligible } from "@/lib/comparison-case";
+import { getCorridor, type Quote } from "@/lib/data";
+import { COMPARISON_FRESHNESS_MS, isFreshComparableCase, isRankEligible } from "@/lib/comparison-case";
 
 type D1Row = {
   id: string;
@@ -156,9 +156,9 @@ export async function getLatestQuotes(corridorSlug: string): Promise<Quote[]> {
   try {
     const rows = await query<D1Row>(`
       SELECT q.* FROM quotes q
-      WHERE q.corridor_slug = ? AND q.status != 'invalid'
+      WHERE q.corridor_slug = ? AND q.status != 'invalid' AND q.captured_at >= ?
       ORDER BY q.captured_at DESC, q.recipient_amount DESC
-    `, [corridorSlug]);
+    `, [corridorSlug, comparisonCutoff()]);
     const latest = new Map<string, D1Row>();
     for (const row of rows) {
       if (!isFreshComparableCase(corridor, { corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency, recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at })) continue;
@@ -337,51 +337,5 @@ export async function getProviderRateEvidence(providerSlug: string): Promise<Pro
     }).sort((a, b) => Number(b.quoteType === "verified") - Number(a.quoteType === "verified") || b.capturedAt.localeCompare(a.capturedAt));
   } catch {
     return [];
-  }
-}
-
-export async function getIndexableCorridorSlugs(): Promise<string[]> {
-  try {
-    const rows = await query<D1Row>(`
-      SELECT q.* FROM quotes q
-      WHERE q.status != 'invalid' AND q.captured_at >= ?
-      ORDER BY q.captured_at DESC
-    `, [comparisonCutoff()]);
-    const byCorridor = new Map<string, D1Row[]>();
-    for (const row of rows) {
-      const bucket = byCorridor.get(row.corridor_slug) ?? [];
-      bucket.push(row);
-      byCorridor.set(row.corridor_slug, bucket);
-    }
-    return corridors.filter((corridor) => hasIndexableComparison(corridor, (byCorridor.get(corridor.slug) ?? []).map((row) => ({
-      corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
-      recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
-      recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
-      fundingMethod: row.funding_method, payoutMethod: row.payout_method,
-      quoteType: row.quote_type, promotion: row.promotion, providerSlug: row.provider_slug,
-    })))).map((corridor) => corridor.slug);
-  } catch {
-    return [];
-  }
-}
-
-export async function isCorridorIndexable(corridorSlug: string) {
-  const corridor = getCorridor(corridorSlug);
-  if (!corridor) return false;
-  try {
-    const rows = await query<D1Row>(`
-      SELECT q.* FROM quotes q
-      WHERE q.corridor_slug = ? AND q.status != 'invalid' AND q.captured_at >= ?
-      ORDER BY q.captured_at DESC
-    `, [corridorSlug, comparisonCutoff()]);
-    return hasIndexableComparison(corridor, rows.map((row) => ({
-      corridorSlug: row.corridor_slug, sourceAmount: row.source_amount, sourceCurrency: row.source_currency,
-      recipientCurrency: row.recipient_currency, status: row.status, capturedAt: row.captured_at,
-      recipientAmount: row.recipient_amount, exchangeRate: row.exchange_rate,
-      fundingMethod: row.funding_method, payoutMethod: row.payout_method,
-      quoteType: row.quote_type, promotion: row.promotion, providerSlug: row.provider_slug,
-    })));
-  } catch {
-    return false;
   }
 }

@@ -69,6 +69,9 @@ test("redirects legacy corridor aliases and exposes canonical discovery files", 
   assert.match(robots, /Allow: \/api\/v1\/rates\//);
   assert.match(robots, /Allow: \/api\/research\//);
   assert.doesNotMatch(robots, /Disallow: \/api\/$/m);
+  assert.doesNotMatch(robots, /Disallow: \/corridors\//);
+  assert.doesNotMatch(robots, /Disallow: \/proof\//);
+  assert.doesNotMatch(robots, /Disallow: \/\*\/receipts\//);
 
   for (const path of ["../app/guides/[slug]/page.tsx", "../app/reviews/[slug]/page.tsx"]) {
     assert.doesNotMatch(await readFile(new URL(path, import.meta.url), "utf8"), /href=\{\`\/proof\//);
@@ -87,7 +90,7 @@ test("renders SWIFT, BIC and country bank-detail checks", async () => {
   const swiftHtml = await swiftResponse.text();
   assert.match(swiftHtml, /SWIFT codes tell the payment where to look/);
   assert.match(swiftHtml, /What bank details does each country use/);
-  assert.match(swiftHtml, /href="\/bank-details\/united-states\/"/);
+  assert.match(swiftHtml, /href="\/bank-details\/united-states"/);
 
   const bicResponse = await worker.fetch(
     new Request("http://localhost/bic-codes", { headers: { accept: "text/html" } }),
@@ -156,6 +159,21 @@ test("renders the free API documentation and exposes the public feed", async () 
   assert.match(html, /The link cannot be hidden in a footer/);
   assert.match(html, /Rates supplied by Online Money Transfer/);
   assert.match(html, /href="\/api"/);
+  assert.match(html, /OpenAPI 3\.1/);
+  assert.match(html, /RFC 9727 catalog/);
+  assert.match(html, /"@type":"WebAPI"/);
+
+  const corridorListResponse = await worker.fetch(
+    new Request("http://localhost/api/v1/corridors"),
+    bindings,
+    context,
+  );
+  assert.equal(corridorListResponse.status, 200);
+  assert.equal(corridorListResponse.headers.get("access-control-allow-origin"), "*");
+  const corridorList = await corridorListResponse.json();
+  assert.equal(corridorList.count, 52);
+  assert.equal(corridorList.corridors[0].route, "uk-to-spain");
+  assert.equal(corridorList.corridors[0].url, "https://onlinemoneytransfer.co.uk/uk-to-spain");
 
   const apiResponse = await worker.fetch(
     new Request("http://localhost/api/v1/rates/uk-to-united-states?history=14"),
@@ -168,9 +186,22 @@ test("renders the free API documentation and exposes the public feed", async () 
   assert.equal(payload.apiVersion, "1.0");
   assert.equal(payload.useTerms.price, "Free");
   assert.equal(payload.useTerms.attributionRequired, true);
+  assert.equal(payload.useTerms.timestampRequired, true);
+  assert.equal(payload.useTerms.statusRequired, true);
   assert.equal(
     payload.useTerms.requiredLink,
     "https://onlinemoneytransfer.co.uk/uk-to-united-states",
+  );
+
+  const csvResponse = await worker.fetch(
+    new Request("http://localhost/api/v1/rates/uk-to-united-states/csv?history=14"),
+    bindings,
+    context,
+  );
+  assert.equal(csvResponse.status, 200);
+  assert.match(
+    await csvResponse.text(),
+    /^"snapshot_id","snapshot_kind","snapshot_time","provider","quote_type","status","eligible_for_ranking",/,
   );
 
   const corridorResponse = await worker.fetch(
@@ -183,7 +214,67 @@ test("renders the free API documentation and exposes the public feed", async () 
   const widget = await readFile(new URL("../public/omt-rates.js", import.meta.url), "utf8");
   assert.match(widget, /window\.OMTRates/);
   assert.match(widget, /Rates supplied by Online Money Transfer/);
+  assert.match(widget, /checkedAt\(rate\.capturedAt\)/);
   assert.match(widget, /data-older/);
+});
+
+test("serves standards-based API discovery files", async () => {
+  const worker = await loadWorker();
+
+  const openapiResponse = await worker.fetch(new Request("http://localhost/openapi.json"), bindings, context);
+  assert.equal(openapiResponse.status, 200);
+  assert.match(openapiResponse.headers.get("content-type") ?? "", /application\/(?:vnd\.oai\.openapi\+)?json/i);
+  const openapi = await openapiResponse.json();
+  assert.equal(openapi.openapi, "3.1.1");
+  assert.ok(openapi.paths["/api/v1/corridors"]);
+  assert.ok(openapi.paths["/api/v1/rates/{route}"]);
+  assert.equal(openapi.info.termsOfService, "https://onlinemoneytransfer.co.uk/api/terms");
+
+  for (const path of ["/apis.json", "/.well-known/apis.json"]) {
+    const response = await worker.fetch(new Request(`http://localhost${path}`), bindings, context);
+    assert.equal(response.status, 200);
+    const index = await response.json();
+    assert.equal(index.specificationVersion, "0.23");
+    assert.equal(index.aid, "onlinemoneytransfer.co.uk:api-index");
+    assert.equal(index.apis[0].aid, "onlinemoneytransfer.co.uk:rates");
+    assert.equal(index.url, `https://onlinemoneytransfer.co.uk${path}`);
+    assert.equal(index.apis[0].properties.some((property) => property.type === "OpenAPI"), true);
+  }
+
+  const catalogResponse = await worker.fetch(new Request("http://localhost/.well-known/api-catalog"), bindings, context);
+  assert.equal(catalogResponse.status, 200);
+  assert.match(catalogResponse.headers.get("content-type") ?? "", /^application\/linkset\+json/i);
+  const catalog = await catalogResponse.json();
+  assert.equal(catalog.linkset[0].anchor, "https://onlinemoneytransfer.co.uk/api/v1/corridors");
+  assert.equal(catalog.linkset[0]["service-desc"][0].href, "https://onlinemoneytransfer.co.uk/openapi.json");
+
+  const postmanResponse = await worker.fetch(new Request("http://localhost/omt-rates.postman_collection.json"), bindings, context);
+  assert.equal(postmanResponse.status, 200);
+  const postman = await postmanResponse.json();
+  assert.equal(postman.info.schema, "https://schema.getpostman.com/json/collection/v2.1.0/collection.json");
+
+  const termsResponse = await worker.fetch(new Request("http://localhost/api/terms", { headers: { accept: "text/html" } }), bindings, context);
+  assert.equal(termsResponse.status, 200);
+  assert.match(await termsResponse.text(), /matching evidence link stays visible/);
+});
+
+test("keeps sitemap URLs and corridor canonicals on the no-slash form", async () => {
+  const worker = await loadWorker();
+  const sitemapResponse = await worker.fetch(new Request("http://localhost/sitemap.xml"), bindings, context);
+  assert.equal(sitemapResponse.status, 200);
+  const sitemap = await sitemapResponse.text();
+  const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  assert.ok(locations.includes("https://onlinemoneytransfer.co.uk/uk-to-spain"));
+  assert.ok(locations.includes("https://onlinemoneytransfer.co.uk/bank-details/united-states"));
+  assert.equal(locations.some((url) => url !== "https://onlinemoneytransfer.co.uk" && url.endsWith("/")), false);
+
+  const publishedResponse = await worker.fetch(new Request("http://localhost/uk-to-spain", { headers: { accept: "text/html" } }), bindings, context);
+  const publishedHtml = await publishedResponse.text();
+  assert.match(publishedHtml, /<link rel="canonical" href="https:\/\/onlinemoneytransfer\.co\.uk\/uk-to-spain"/);
+  assert.match(publishedHtml, /<meta name="robots" content="index, follow/);
+
+  const unpublishedResponse = await worker.fetch(new Request("http://localhost/uk-to-hong-kong", { headers: { accept: "text/html" } }), bindings, context);
+  assert.match(await unpublishedResponse.text(), /<meta name="robots" content="noindex, follow"/);
 });
 
 test("renders the production coverage ledger", async () => {

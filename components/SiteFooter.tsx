@@ -10,8 +10,8 @@ export function SiteFooter() {
         </div>
         <div>
           <strong>Compare</strong>
-          <Link href="/uk-to-spain/">UK to Spain</Link>
-          <Link href="/uk-to-united-states/">UK to United States</Link>
+          <Link href="/uk-to-spain">UK to Spain</Link>
+          <Link href="/uk-to-united-states">UK to United States</Link>
           <Link href="/#corridors">All corridors</Link>
           <Link href="/reviews">Company reviews</Link>
           <Link href="/coverage">What we checked today</Link>

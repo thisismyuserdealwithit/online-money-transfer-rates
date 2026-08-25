@@ -1,0 +1,33 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://onlinemoneytransfer.co.uk/api/v1/corridors",
+      "service-desc": [
+        {
+          "href": "https://onlinemoneytransfer.co.uk/openapi.json",
+          "type": "application/vnd.oai.openapi+json;version=3.1"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://onlinemoneytransfer.co.uk/api",
+          "type": "text/html"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://onlinemoneytransfer.co.uk/apis.json",
+          "type": "application/json"
+        }
+      ],
+      "item": [
+        {
+          "href": "https://onlinemoneytransfer.co.uk/api/v1/corridors"
+        },
+        {
+          "href": "https://onlinemoneytransfer.co.uk/api/v1/rates/uk-to-united-states"
+        }
+      ]
+    }
+  ]
+}

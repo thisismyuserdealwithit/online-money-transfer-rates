@@ -9,7 +9,7 @@ import { corridors, getCorridor, money, monitoredProviders } from "@/lib/data";
 import { getLatestQuotes, getQuoteHistory } from "@/lib/live-data";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export function generateStaticParams() {
   return corridors.map((corridor) => ({ slug: corridor.slug }));
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title,
     description,
-    alternates: { canonical: `/${slug}/` },
+    alternates: { canonical: `/${slug}` },
     robots: { index: false, follow: true },
   };
 }
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function CorridorAliasPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   if (!getCorridor(slug)) notFound();
-  permanentRedirect(`/${slug}/`);
+  permanentRedirect(`/${slug}`);
 }
 
 export async function renderCorridorPage(slug: string) {

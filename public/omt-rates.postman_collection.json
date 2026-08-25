@@ -1,0 +1,89 @@
+{
+  "info": {
+    "_postman_id": "36bb5fe4-319b-41e2-a2b2-589b1d0364f7",
+    "name": "Online Money Transfer Rates API",
+    "description": "Current and historical corridor evidence. Use is free when displayed rates include a visible link to the matching Online Money Transfer corridor and keep each rate's capturedAt and status visible.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://onlinemoneytransfer.co.uk"
+    },
+    {
+      "key": "route",
+      "value": "uk-to-united-states"
+    },
+    {
+      "key": "history",
+      "value": "14"
+    }
+  ],
+  "item": [
+    {
+      "name": "List supported corridors",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/corridors",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "corridors"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get corridor rates (JSON)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rates/{{route}}?history={{history}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "rates", "{{route}}"],
+          "query": [
+            { "key": "history", "value": "{{history}}" }
+          ]
+        },
+        "description": "Returns the latest usable provider record and earlier stored comparison sweeps. Follow useTerms.requiredLink and keep each rate's capturedAt and status visible when publishing the figures."
+      },
+      "response": []
+    },
+    {
+      "name": "Download corridor rates (CSV)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "text/csv" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rates/{{route}}/csv?history={{history}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "rates", "{{route}}", "csv"],
+          "query": [
+            { "key": "history", "value": "{{history}}" }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "OpenAPI definition",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/openapi.json",
+          "host": ["{{baseUrl}}"],
+          "path": ["openapi.json"]
+        }
+      },
+      "response": []
+    }
+  ]
+}

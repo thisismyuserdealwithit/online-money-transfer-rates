@@ -8,7 +8,7 @@ export function GET() {
   const corridorLinks = corridors
     .map(
       (corridor) =>
-        `- [${corridor.fromCountry} to ${corridor.toCountry}](${siteUrl}/${corridor.slug}/): ${corridor.fromCurrency} to ${corridor.toCurrency} rate comparison and dated evidence.`,
+        `- [${corridor.fromCountry} to ${corridor.toCountry}](${siteUrl}/${corridor.slug}): ${corridor.fromCurrency} to ${corridor.toCurrency} rate comparison and dated evidence.`,
     )
     .join("\n");
   const guideLinks = guides
@@ -26,7 +26,7 @@ export function GET() {
   const bankDetailLinks = bankDetailsProfiles
     .map(
       (profile) =>
-        `- [Bank details for ${profile.country}](${siteUrl}/bank-details/${profile.slug}/): ${profile.accountFormat}; local and SWIFT/BIC requirements with official source links.`,
+        `- [Bank details for ${profile.country}](${siteUrl}/bank-details/${profile.slug}): ${profile.accountFormat}; local and SWIFT/BIC requirements with official source links.`,
     )
     .join("\n");
 
@@ -77,6 +77,13 @@ ${bankDetailLinks}
 ## Reuse
 
 The public API and JavaScript widget may be used without charge when the rates have a visible, clickable attribution to the matching OnlineMoneyTransfer.co.uk corridor. Receipt images remain hosted on this site. Check the timestamp because exchange rates can change after capture.
+
+- [API integration guide](${siteUrl}/api)
+- [API use terms](${siteUrl}/api/terms)
+- [Valid corridor routes](${siteUrl}/api/v1/corridors)
+- [OpenAPI definition](${siteUrl}/openapi.json)
+- [APIs.json index](${siteUrl}/apis.json)
+- [RFC 9727 API catalog](${siteUrl}/.well-known/api-catalog)
 `;
 
   return new Response(content, {

@@ -9,7 +9,7 @@ export function CorridorFinder() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    window.location.assign(`/${slug}/`);
+    window.location.assign(`/${slug}`);
   }
 
   return (

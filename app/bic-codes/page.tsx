@@ -9,7 +9,7 @@ import { pageMetadata, siteUrl } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "BIC Code Checker: Format and Bank Country",
   description: "Check whether a BIC has the standard 8 or 11-character structure and whether its country characters match the expected receiving-bank country.",
-  path: "/bic-codes/",
+  path: "/bic-codes",
 });
 
 export default function BicCodesPage() {
@@ -20,13 +20,13 @@ export default function BicCodesPage() {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-          { "@type": "ListItem", position: 2, name: "BIC checker", item: `${siteUrl}/bic-codes/` },
+          { "@type": "ListItem", position: 2, name: "BIC checker", item: `${siteUrl}/bic-codes` },
         ],
       },
       {
         "@type": "WebApplication",
         name: "BIC format and country checker",
-        url: `${siteUrl}/bic-codes/`,
+        url: `${siteUrl}/bic-codes`,
         applicationCategory: "FinanceApplication",
         operatingSystem: "Any web browser",
         offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" },
@@ -42,7 +42,7 @@ export default function BicCodesPage() {
         <section className="codes-hero bic-hero">
           <div className="shell codes-hero-grid">
             <div>
-              <div className="crumbs"><Link href="/">Home</Link><span>›</span><Link href="/swift-codes/">SWIFT codes</Link><span>›</span><b>BIC checker</b></div>
+              <div className="crumbs"><Link href="/">Home</Link><span>›</span><Link href="/swift-codes">SWIFT codes</Link><span>›</span><b>BIC checker</b></div>
               <span className="kicker">PRIVATE FORMAT CHECK</span>
               <h1>Does this BIC look right for the country you are paying?</h1>
               <p>Paste the 8 or 11-character code. We will check its ISO 9362 structure and compare the country characters with the expected receiving-bank country. The entry stays in your browser.</p>
@@ -104,7 +104,7 @@ export default function BicCodesPage() {
             <div>
               <a href="https://www.swift.com/standards/data-standards/bic-business-identifier-code" target="_blank" rel="noopener noreferrer">SWIFT BIC structure ↗</a>
               <a href="https://www.swiftref.com/en/bicsearch" target="_blank" rel="noopener noreferrer">Official BIC Search ↗</a>
-              <Link href="/swift-codes/">Read the SWIFT guide →</Link>
+              <Link href="/swift-codes">Read the SWIFT guide →</Link>
             </div>
           </section>
 

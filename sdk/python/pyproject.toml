@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "online-money-transfer-rates"
+version = "0.1.0"
+description = "Dependency-free Python client for the free Online Money Transfer rates API."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [
+  { name = "Finofin Limited" }
+]
+keywords = ["money-transfer", "exchange-rates", "remittance", "api-client"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Office/Business :: Financial"
+]
+
+[project.urls]
+Homepage = "https://onlinemoneytransfer.co.uk/api"
+Documentation = "https://onlinemoneytransfer.co.uk/api"
+Repository = "https://github.com/thisismyuserdealwithit/online-money-transfer-rates"
+Issues = "https://github.com/thisismyuserdealwithit/online-money-transfer-rates/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

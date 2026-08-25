@@ -20,9 +20,28 @@ const widgetCode = `<div id="omt-rates"></div>
   data-limit="10">
 </script>`;
 
-const attributionCode = `<a href="https://onlinemoneytransfer.co.uk/uk-to-united-states/">
+const attributionCode = `<a href="https://onlinemoneytransfer.co.uk/uk-to-united-states">
   Rates supplied by Online Money Transfer
 </a>`;
+
+const apiSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebAPI",
+  "@id": "https://onlinemoneytransfer.co.uk/api#service",
+  name: "Online Money Transfer Rates API",
+  description: "Free JSON and CSV access to timestamped money transfer rate evidence, with corridor-specific attribution.",
+  url: "https://onlinemoneytransfer.co.uk/api",
+  documentation: "https://onlinemoneytransfer.co.uk/api",
+  termsOfService: "https://onlinemoneytransfer.co.uk/api/terms",
+  serviceType: "Money transfer rate evidence API",
+  provider: { "@id": "https://onlinemoneytransfer.co.uk/#organisation" },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "GBP",
+    description: "Free with a visible link to the matching Online Money Transfer corridor while retaining each rate's capture time and evidence status.",
+  },
+};
 
 export default function ApiPage() {
   return (
@@ -41,9 +60,9 @@ export default function ApiPage() {
               </div>
             </div>
             <aside>
-              <span>THE ONE CONDITION</span>
-              <strong>Link back clearly</strong>
-              <p>Use is free for commercial and non-commercial websites as long as the rates are accompanied by a clearly visible link to the relevant corridor on onlinemoneytransfer.co.uk.</p>
+              <span>DISPLAY CONDITIONS</span>
+              <strong>Link back and keep the context</strong>
+              <p>Use is free for commercial and non-commercial websites when each rate keeps its capture time and evidence status, with a clearly visible link to the relevant corridor on onlinemoneytransfer.co.uk.</p>
             </aside>
           </div>
         </section>
@@ -55,14 +74,14 @@ export default function ApiPage() {
             <article><b>03</b><strong>Receipt links</strong><p>Evidence stays on OMT rather than being copied to the publisher.</p></article>
           </div>
 
-          <section className="api-attribution">
+          <section className="api-attribution" id="terms">
             <div>
               <span className="kicker">FREE USE TERMS</span>
               <h2>The link cannot be hidden in a footer</h2>
             </div>
             <div>
-              <p>The attribution should sit beside or immediately below the rates. It must be readable, clickable and point to the matching OMT corridor. A generic homepage link elsewhere on the site does not meet this condition.</p>
-              <p>The supplied widget already includes the correct link. If you use the JSON feed to make your own design, add the attribution yourself.</p>
+              <p>The attribution should sit beside or immediately below the rates. It must be readable, clickable and point to the matching OMT corridor. Keep each figure&apos;s capture time and evidence status visible too. A generic homepage link elsewhere on the site does not meet these conditions.</p>
+              <p>The supplied widget already includes the correct link. If you use the JSON feed to make your own design, add the attribution yourself. <Link href="/api/terms">Read the complete API use terms.</Link></p>
             </div>
           </section>
 
@@ -92,6 +111,7 @@ export default function ApiPage() {
               <span>GET</span>
               <code>https://onlinemoneytransfer.co.uk/api/v1/rates/uk-to-united-states?history=14</code>
             </div>
+            <p className="api-note">Discover every valid route at <Link href="/api/v1/corridors"><code>GET /api/v1/corridors</code></Link>.</p>
             <div className="api-fields">
               <article><strong>current.rates</strong><p>The latest usable record per provider, matching the logic of the main OMT table.</p></article>
               <article><strong>history</strong><p>Exact comparison sweeps, ordered from newest to oldest.</p></article>
@@ -108,13 +128,29 @@ export default function ApiPage() {
             <p className="api-note">Replace the example route with the corridor shown in your table. Do not describe an indicative or stale result as a guaranteed live transfer quote. Cache the response and avoid unnecessary repeated requests.</p>
           </section>
 
+          <section className="api-section" id="resources">
+            <div className="section-heading">
+              <div><span className="kicker">MACHINE-READABLE RESOURCES</span><h2>Import the API instead of transcribing it</h2><p>These files are public, versioned with the API and suitable for documentation tools, clients and API directories.</p></div>
+            </div>
+            <div className="api-fields">
+              <article><strong><a href="/openapi.json">OpenAPI 3.1</a></strong><p>Endpoint, parameter, response and attribution definitions.</p></article>
+              <article><strong><a href="/apis.json">APIs.json</a></strong><p>The public API index used by API discovery services.</p></article>
+              <article><strong><Link href="/.well-known/api-catalog">RFC 9727 catalog</Link></strong><p>A standards-based well-known API catalog in Linkset JSON.</p></article>
+              <article><strong><a href="/omt-rates.postman_collection.json">Postman collection</a></strong><p>Ready-to-run JSON and CSV requests for an example corridor.</p></article>
+              <article><strong><a href="https://github.com/thisismyuserdealwithit/online-money-transfer-rates/tree/main/sdk/javascript">JavaScript client</a></strong><p>A dependency-free browser and Node.js package with TypeScript declarations.</p></article>
+              <article><strong><a href="https://github.com/thisismyuserdealwithit/online-money-transfer-rates/tree/main/sdk/python">Python client</a></strong><p>A dependency-free Python package built on the standard library.</p></article>
+              <article><strong><a href="https://github.com/thisismyuserdealwithit/online-money-transfer-rates/tree/main/integrations/wordpress/online-money-transfer-rates">WordPress shortcode</a></strong><p>A server-side, cached rate table with visible evidence context and attribution.</p></article>
+            </div>
+          </section>
+
           <aside className="api-help">
             <div><span className="kicker">START WITH A REAL CORRIDOR</span><h2>See the data before you integrate it</h2><p>Open the UK to United States comparison to see the page, rate labels, historical records and receipts that sit behind the API response.</p></div>
-            <Link href="/uk-to-united-states/">Open UK to US rates →</Link>
+            <Link href="/uk-to-united-states">Open UK to US rates →</Link>
           </aside>
         </section>
       </main>
       <SiteFooter />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(apiSchema).replace(/</g, "\\u003c") }} />
     </>
   );
 }

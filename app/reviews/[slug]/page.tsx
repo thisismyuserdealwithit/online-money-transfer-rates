@@ -8,6 +8,8 @@ import { getProviderRateEvidence } from "@/lib/live-data";
 import { getProviderReview, providerReviews, reviewsUpdated } from "@/lib/reviews";
 import { pageMetadata } from "@/lib/seo";
 
+export const revalidate = 300;
+
 export function generateStaticParams() {
   return providerReviews.map((review) => ({ slug: review.slug }));
 }
@@ -151,7 +153,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
                           : null;
                         return (
                           <tr key={item.id}>
-                            <th scope="row"><Link href={`/${item.corridorSlug}/`}>{corridor ? `${corridor.fromCountry} → ${corridor.toCountry}` : item.corridorSlug}</Link><small>{item.fundingMethod} · {item.payoutMethod}</small></th>
+                            <th scope="row"><Link href={`/${item.corridorSlug}`}>{corridor ? `${corridor.fromCountry} → ${corridor.toCountry}` : item.corridorSlug}</Link><small>{item.fundingMethod} · {item.payoutMethod}</small></th>
                             <td>{money(item.sourceAmount, item.sourceCurrency)}</td>
                             <td>{money(item.feeAmount, item.feeCurrency)}</td>
                             <td><strong>{money(item.recipientAmount, item.recipientCurrency)}</strong><small>Rate {item.exchangeRate.toLocaleString("en-GB", { maximumFractionDigits: 6 })}</small></td>

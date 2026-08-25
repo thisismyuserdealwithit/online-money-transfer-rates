@@ -43,3 +43,9 @@ next-env.d.ts
 /outputs/
 /work/
 /.pw-browsers/
+
+# python packaging and test caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+sdk/python/build/

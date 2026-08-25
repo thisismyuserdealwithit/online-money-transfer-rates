@@ -66,6 +66,9 @@ export async function GET(
       requiredLink: corridorUrl,
       wording: "Rates supplied by Online Money Transfer",
       placement: "The link must be clearly visible on the page where the rates appear.",
+      timestampRequired: true,
+      statusRequired: true,
+      context: "Keep each displayed rate's capture time and evidence status with the figure.",
     },
     evidencePolicy: {
       receiptLinksOnly: true,

@@ -7,6 +7,8 @@ import { getProviderCoverage } from "@/lib/live-data";
 import { providerReviews, reviewsUpdated } from "@/lib/reviews";
 import { pageMetadata } from "@/lib/seo";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = pageMetadata({
   title: "Money Transfer Company Rate Reviews and Live Comparisons",
   description: "Compare Wise, Xe, Revolut, CurrencyFair, UK banks and other transfer services through current rate evidence, fees and dated provider receipts.",

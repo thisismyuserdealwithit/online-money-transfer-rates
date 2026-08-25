@@ -39,3 +39,7 @@ jobs:
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           PROVIDER_FILTER: xe,atlanticmoney,instarem,ria,taptapsend,transfergo,singx,starling,natwestbusiness,lloydsbusiness,santanderuk,wisecomparison
           SUMMARY_ONLY: "1"
+      - name: Notify IndexNow participants
+        continue-on-error: true
+        working-directory: .
+        run: node scripts/submit-indexnow.mjs

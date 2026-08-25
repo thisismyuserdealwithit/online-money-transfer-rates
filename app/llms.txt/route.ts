@@ -41,6 +41,9 @@ const content = `# Online Money Transfer
 - [XML sitemap](${siteUrl}/sitemap.xml)
 - [Robots policy](${siteUrl}/robots.txt)
 - [Rates API documentation](${siteUrl}/api)
+- [API route catalogue](${siteUrl}/api/v1/corridors)
+- [OpenAPI 3.1 definition](${siteUrl}/openapi.json)
+- [API use terms](${siteUrl}/api/terms)
 `;
 
 export function GET() {

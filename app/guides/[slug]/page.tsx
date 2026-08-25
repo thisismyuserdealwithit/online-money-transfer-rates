@@ -8,6 +8,8 @@ import { getGuide, guideWordCount, guides } from "@/lib/guides";
 import { getLatestQuotes } from "@/lib/live-data";
 import { pageMetadata } from "@/lib/seo";
 
+export const revalidate = 300;
+
 export function generateStaticParams() {
   return guides.map((guide) => ({ slug: guide.slug }));
 }
@@ -140,7 +142,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                       ) : (
                         <p className="guide-live-pending">No completed public quote is current right now. The route remains open, including the providers that failed, until the next usable receipt arrives.</p>
                       )}
-                      <Link className="guide-live-open" href={`/${corridor.slug}/`}>See the full rate check →</Link>
+                      <Link className="guide-live-open" href={`/${corridor.slug}`}>See the full rate check →</Link>
                     </section>
                   ))}
                 </div>

@@ -137,6 +137,17 @@ npm run render:start
 
 See [CRAWLER.md](CRAWLER.md) for provider-specific capture rules and operational notes.
 
+## Public API discovery
+
+The free rates API is described in several machine-readable formats:
+
+- `https://onlinemoneytransfer.co.uk/openapi.json` — OpenAPI 3.1
+- `https://onlinemoneytransfer.co.uk/.well-known/apis.json` — APIs.json 0.23
+- `https://onlinemoneytransfer.co.uk/.well-known/api-catalog` — RFC 9727 Linkset
+- `https://onlinemoneytransfer.co.uk/omt-rates.postman_collection.json` — Postman Collection 2.1
+
+The daily rate workflow notifies IndexNow participants after a successful crawl without making notification availability a crawl-job dependency. `npm run indexnow:check` validates the local key and request configuration without sending a notification.
+
 ## Versioned research releases
 
 Citation-ready snapshots with methodology, attribution and checksums are maintained under [`research-releases/`](research-releases/README.md). These packages preserve the evidence date and should not be treated as live consumer quotes.
