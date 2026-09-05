@@ -3,7 +3,16 @@ name: Daily public rate check
 on:
   schedule:
     - cron: "17 5 * * *"
+    - cron: "17 17 * * *"
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/daily-rates.yml
+      - scripts/check-rate-freshness.mjs
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: daily-public-rate-check
@@ -23,7 +32,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: crawler/package-lock.json
+      - name: Test the freshness checks
+        working-directory: .
+        run: node --test tests/rate-freshness.test.mjs
+      - name: Check whether recovery is needed
+        id: recovery
+        if: github.event_name == 'schedule' && github.event.schedule == '17 17 * * *'
+        working-directory: .
+        run: node scripts/check-rate-freshness.mjs guard
       - name: Check ingestion token
+        if: steps.recovery.outputs.should_crawl != 'false'
         env:
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
         run: |
@@ -32,14 +50,25 @@ jobs:
             exit 1
           fi
       - run: npm ci
+        if: steps.recovery.outputs.should_crawl != 'false'
       - run: npx playwright install --with-deps chromium
-      - run: npm run crawl
+        if: steps.recovery.outputs.should_crawl != 'false'
+      - name: Collect public rates
+        if: steps.recovery.outputs.should_crawl != 'false'
+        run: |
+          echo "OMT_CRAWL_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          npm run crawl
         env:
           INGEST_ENDPOINT: https://online-money-transfer-rates-1.onrender.com/api/ingest
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           PROVIDER_FILTER: xe,atlanticmoney,instarem,ria,taptapsend,transfergo,singx,starling,natwestbusiness,lloydsbusiness,santanderuk,wisecomparison
           SUMMARY_ONLY: "1"
+      - name: Verify fresh results reached the live site
+        if: steps.recovery.outputs.should_crawl != 'false'
+        working-directory: .
+        run: node scripts/check-rate-freshness.mjs verify
       - name: Notify IndexNow participants
+        if: steps.recovery.outputs.should_crawl != 'false'
         continue-on-error: true
         working-directory: .
         run: node scripts/submit-indexnow.mjs

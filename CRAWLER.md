@@ -24,7 +24,11 @@ WorldRemit currently introduces a human verification step, ACE and OrbitRemit bl
 
 ## Schedule
 
-The included GitHub Actions workflow runs at 05:17 UTC every day and can also be started manually. Set repository secrets `INGEST_ENDPOINT` and `INGEST_TOKEN`. The ingest token must match the runtime secret on Render or Sites. Add `SITES_BYPASS_TOKEN` only while posting to an owner-protected Sites URL; Render does not use it.
+The included GitHub Actions workflow runs at 05:17 UTC every day and can also be started manually. At 17:17 UTC it checks the live coverage endpoint and repeats collection only if evidence is missing, incomplete or more than 26 hours old. This recovery window precedes the site's 36-hour expiry. Changes to the collection workflow or freshness checker also start a collection on `main`.
+
+Every collection must finish with a new successful run in the public ledger and fresh evidence across all 52 routes. The workflow fails if the live coverage check does not confirm those results, even when the crawler itself exits successfully. Individual provider failures may leave a partial run, provided each route still has fresh evidence. This does not change the stricter rules for verified price rankings.
+
+The workflow posts to `https://online-money-transfer-rates-1.onrender.com/api/ingest` using the repository secret `INGEST_TOKEN`, which must match Render. For local runs, set both `INGEST_ENDPOINT` and `INGEST_TOKEN`. Add `SITES_BYPASS_TOKEN` only while posting to an owner-protected Sites URL; Render does not use it.
 
 For a focused manual run, set `CORRIDOR_FILTER` and/or `PROVIDER_FILTER` to comma-separated slugs before starting the crawler.
 When one public comparison response contains several providers, the ingest stores its proof image once and links every provider row to that immutable object.
