@@ -15,7 +15,6 @@ export async function generateMetadata(
     title: `Stored rate receipt: ${corridor.fromCountry} to ${corridor.toCountry}`,
     description: "The dated provider evidence behind an Online Money Transfer rate.",
     path: `/${route}/receipts/${encodeURIComponent(id)}`,
-    noIndex: true,
   });
 }
 

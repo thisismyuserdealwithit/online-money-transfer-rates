@@ -45,7 +45,9 @@ test("renders production discovery metadata", async () => {
     /<meta(?=[^>]*\bproperty=["']og:url["'])(?=[^>]*\bcontent=["']https:\/\/onlinemoneytransfer\.co\.uk\/["'])[^>]*>/i,
   );
   assert.match(html, /href="\/uk-to-spain"/);
-  assert.doesNotMatch(html, /href="\/uk-to-hong-kong"/);
+  assert.match(html, /href="\/uk-to-hong-kong"/);
+  assert.match(html, /href="\/pakistan-to-uk"/);
+  assert.match(html, /href="\/switzerland-to-europe"/);
 });
 
 test("redirects legacy corridor aliases and exposes canonical discovery files", async () => {
@@ -73,6 +75,7 @@ test("redirects legacy corridor aliases and exposes canonical discovery files", 
   assert.doesNotMatch(robots, /Disallow: \/api\/$/m);
   assert.doesNotMatch(robots, /Disallow: \/corridors\//);
   assert.doesNotMatch(robots, /Disallow: \/proof\//);
+  assert.doesNotMatch(robots, /Disallow: \/api\/proof\//);
   assert.doesNotMatch(robots, /Disallow: \/\*\/receipts\//);
 
   for (const path of ["../app/guides/[slug]/page.tsx", "../app/reviews/[slug]/page.tsx"]) {
@@ -267,6 +270,9 @@ test("keeps sitemap URLs and corridor canonicals on the no-slash form", async ()
   const sitemap = await sitemapResponse.text();
   const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
   assert.ok(locations.includes("https://onlinemoneytransfer.co.uk/uk-to-spain"));
+  assert.ok(locations.includes("https://onlinemoneytransfer.co.uk/uk-to-hong-kong"));
+  assert.ok(locations.includes("https://onlinemoneytransfer.co.uk/pakistan-to-uk"));
+  assert.ok(locations.includes("https://onlinemoneytransfer.co.uk/switzerland-to-europe"));
   assert.ok(locations.includes("https://onlinemoneytransfer.co.uk/bank-details/united-states"));
   assert.equal(locations.some((url) => url !== "https://onlinemoneytransfer.co.uk" && url.endsWith("/")), false);
 
@@ -275,8 +281,9 @@ test("keeps sitemap URLs and corridor canonicals on the no-slash form", async ()
   assert.match(publishedHtml, /<link rel="canonical" href="https:\/\/onlinemoneytransfer\.co\.uk\/uk-to-spain"/);
   assert.match(publishedHtml, /<meta name="robots" content="index, follow/);
 
-  const unpublishedResponse = await worker.fetch(new Request("http://localhost/uk-to-hong-kong", { headers: { accept: "text/html" } }), bindings, context);
-  assert.match(await unpublishedResponse.text(), /<meta name="robots" content="noindex, follow"/);
+  const additionalRouteResponse = await worker.fetch(new Request("http://localhost/uk-to-hong-kong", { headers: { accept: "text/html" } }), bindings, context);
+  assert.equal(additionalRouteResponse.status, 200);
+  assert.match(await additionalRouteResponse.text(), /<meta name="robots" content="index, follow/);
 });
 
 test("renders the production coverage ledger", async () => {

@@ -16,7 +16,6 @@ export async function generateMetadata(
     description:
       "The dated provider screen and recorded figures behind an Online Money Transfer rate.",
     path: `/proof/${encodeURIComponent(id)}`,
-    noIndex: true,
   });
 }
 

@@ -10,7 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         "/api/affiliate/",
         "/api/health",
         "/api/ingest",
-        "/api/proof/",
         "/api/discovery/",
         "/go/",
       ],

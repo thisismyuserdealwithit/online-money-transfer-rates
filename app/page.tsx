@@ -6,7 +6,6 @@ import { QuoteTable } from "@/components/QuoteTable";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridorGroups, corridors, money } from "@/lib/data";
-import { isPublishedCorridor } from "@/lib/corridor-publication";
 import { getLatestQuotes } from "@/lib/live-data";
 import { defaultDescription, pageMetadata } from "@/lib/seo";
 
@@ -31,10 +30,6 @@ function CorridorGrid({ items }: { items: typeof corridors }) {
     </div>
   );
 }
-
-const publishedUkCorridors = corridorGroups["from-uk"].filter((corridor) =>
-  isPublishedCorridor(corridor.slug),
-);
 
 export default async function Home() {
   const featuredBase = corridors[0];
@@ -103,9 +98,16 @@ export default async function Home() {
         </section>
 
         <section className="section shell corridor-section">
-          <div className="section-heading"><div><span className="kicker">PUBLISHED COMPARISONS</span><h2>Sending pounds abroad</h2><p>Reviewed GBP routes with a stable place in our public index.</p></div></div>
-          <CorridorGrid items={publishedUkCorridors} />
-          <p className="data-caveat">We monitor more inbound and international routes too. Use the route finder above to inspect them while their comparison evidence is still being reviewed for publication.</p>
+          <div className="section-heading"><div><span className="kicker">TRANSFER ROUTES</span><h2>Sending pounds abroad</h2><p>Browse each route&apos;s rates, provider availability and dated evidence.</p></div></div>
+          <CorridorGrid items={corridorGroups["from-uk"]} />
+        </section>
+        <section className="section shell corridor-section">
+          <div className="section-heading"><div><h2>Sending money to the UK</h2><p>Compare incoming transfers from Europe and beyond.</p></div></div>
+          <CorridorGrid items={corridorGroups["to-uk"]} />
+        </section>
+        <section className="section shell corridor-section">
+          <div className="section-heading"><div><h2>Other international routes</h2><p>Inspect the evidence for transfers between major currencies.</p></div></div>
+          <CorridorGrid items={corridorGroups.major} />
         </section>
         <CompanyTrust />
       </main>
