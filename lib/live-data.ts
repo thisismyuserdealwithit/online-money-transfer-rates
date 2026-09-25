@@ -90,7 +90,8 @@ export type ProviderRateEvidence = {
 
 function markFor(slug: string) {
   const marks: Record<string, string> = { wise: "WI", revolut: "RE", currencyfair: "CF", xe: "XE", remitly: "RM", paysend: "PS", westernunion: "WU", worldremit: "WR", singx: "SX", transfergo: "TG", instarem: "IR", ria: "RIA", atlanticmoney: "AM", taptapsend: "TS", ace: "ACE", profee: "PF", xoom: "XM", orbitremit: "OR", moneygram: "MG", ofx: "OFX", lemfi: "LF", starling: "ST", natwestbusiness: "NWB", lloydsbusiness: "LB", santanderuk: "SAN", hsbcuk: "HSBC", barclays: "BAR", natwest: "NW", rbs: "RBS", nationwide: "NWD", monese: "MO", skrill: "SK", paypal: "PP", asda: "AS", lloyds: "LL", santander: "SAN", hsbc: "HSBC" };
-  return marks[slug] ?? slug.slice(0, 2).toUpperCase();
+  const expansionMarks: Record<string, string> = { nala: "NA", moneyfex: "MF", remitchoice: "RC", currenciesdirect: "CD", torfx: "TF", moneycorp: "MC" };
+  return marks[slug] ?? expansionMarks[slug] ?? slug.slice(0, 2).toUpperCase();
 }
 
 function comparisonCutoff(now = Date.now()) {

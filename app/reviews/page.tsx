@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AuthorPanel } from "@/components/AuthorPanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getProviderCoverage } from "@/lib/live-data";
-import { providerReviews, reviewsUpdated } from "@/lib/reviews";
+import { providerCollectionLabel, providerReviews } from "@/lib/reviews";
 import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -39,7 +38,7 @@ export default async function ReviewsPage() {
               <p>We begin with what the recipient gets, because that is where a “fee-free” claim either survives or falls apart. The review then covers delivery, service and the bits of the price a public calculator does not reveal.</p>
             </div>
             <aside>
-              <span>LIVE REVIEW COVERAGE</span>
+              <span>REVIEW DIRECTORY</span>
               <strong>{providerReviews.length}</strong>
               <p>companies examined</p>
               <div><b>{captured}</b><small>current provider records</small></div>
@@ -73,15 +72,16 @@ export default async function ReviewsPage() {
                       <Link href={`/reviews/${review.slug}`} className="review-card" key={review.slug}>
                         <header>
                           <span className={`provider-mark mark-${review.slug}`}>{review.mark}</span>
-                          <div><h3>{review.name}</h3><span className="review-score">{review.rating.toFixed(1)} <small>/ 5 editorial rating</small></span></div>
+                          <div><h3>{review.name}</h3><span className="review-score">{review.rating === null ? "Not rated" : <>{review.rating.toFixed(1)} <small>/ 5 editorial rating</small></>}</span></div>
                         </header>
                         <p>{review.verdict}</p>
                         <dl>
+                          {review.collectionMethod && <div><dt>Collection method</dt><dd>{providerCollectionLabel(review, Boolean(live))}</dd></div>}
                           <div><dt>Rate evidence</dt><dd>{live ? `${live.corridorCount} corridors` : "No fresh capture"}</dd></div>
                           <div><dt>Verified quotes</dt><dd>{live?.verifiedCount ?? 0}</dd></div>
-                          <div><dt>Last checked</dt><dd>{dateLabel(live?.latestCapturedAt)}</dd></div>
+                          <div><dt>Latest rate receipt</dt><dd>{live ? dateLabel(live.latestCapturedAt) : "None current"}</dd></div>
                         </dl>
-                        <strong>See how the price holds up →</strong>
+                        <strong>{review.rating === null ? "Read the provider research →" : "See how the price holds up →"}</strong>
                       </Link>
                     );
                   })}
@@ -96,7 +96,7 @@ export default async function ReviewsPage() {
             <p>The editorial score reflects how the service works for its intended customer, including its reach and support. The price winner is calculated afresh for each route. A polished provider with a high rating does not receive a free pass in the live table.</p>
             <div><Link href="/methodology">See how a quote qualifies</Link><Link href="/coverage">Check the latest collection</Link></div>
           </aside>
-          <AuthorPanel label={`REVIEWS UPDATED ${reviewsUpdated.toUpperCase()}`} />
+          <p className="data-caveat">Each review names its author and update date. Research notes marked &ldquo;Not rated&rdquo; cover published terms without assigning an editorial score.</p>
         </section>
       </main>
       <SiteFooter />

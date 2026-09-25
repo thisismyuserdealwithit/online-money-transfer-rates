@@ -1,3 +1,4 @@
+import { moneyfex } from "./providers/moneyfex.mjs";
 import { chromium } from "playwright";
 import { createHash, randomUUID } from "node:crypto";
 import { corridors } from "./corridors.mjs";
@@ -20,6 +21,7 @@ import { wiseComparison } from "./providers/wisecomparison.mjs";
 import { westernunion } from "./providers/westernunion.mjs";
 import { xe } from "./providers/xe.mjs";
 import { UnsupportedRouteError } from "./providers/shared.mjs";
+import { cacheCaptureFailure, cachedCaptureError, summarizeProviders } from "./reporting.mjs";
 
 const endpoint = process.env.INGEST_ENDPOINT;
 const token = process.env.INGEST_TOKEN;
@@ -27,7 +29,7 @@ const dryRun = process.env.DRY_RUN === "1";
 const summaryOnly = process.env.SUMMARY_ONLY === "1";
 if (!dryRun && (!endpoint || !token)) throw new Error("INGEST_ENDPOINT and INGEST_TOKEN are required");
 
-const providerRegistry = [wise, currencyfair, atlanticMoney, instarem, ria, taptapSend, paysend, westernunion, revolut, xe, transfergo, singx, remitly, starling, natWestBusiness, lloydsBusiness, santanderUk, wiseComparison];
+const providerRegistry = [moneyfex, wise, currencyfair, atlanticMoney, instarem, ria, taptapSend, paysend, westernunion, revolut, xe, transfergo, singx, remitly, starling, natWestBusiness, lloydsBusiness, santanderUk, wiseComparison];
 const corridorFilter = new Set((process.env.CORRIDOR_FILTER || "").split(",").map((value) => value.trim()).filter(Boolean));
 const providerFilter = new Set((process.env.PROVIDER_FILTER || "").split(",").map((value) => value.trim()).filter(Boolean));
 const invalidatesPreviousCurrent = new Set((process.env.INVALIDATE_PREVIOUS_CURRENT_FILTER || "").split(",").map((value) => value.trim()).filter(Boolean));
@@ -86,7 +88,7 @@ async function captureQuote(provider, corridor) {
     };
   }
   const cachedFailure = captureFailures.get(cacheKey);
-  if (cachedFailure) throw new Error(`Equivalent quote already failed in this run: ${cachedFailure}`);
+  if (cachedFailure) throw cachedCaptureError(cachedFailure);
 
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -103,8 +105,9 @@ async function captureQuote(provider, corridor) {
       await page.close();
     }
   }
-  const failureMessage = lastError instanceof Error ? lastError.message : String(lastError);
-  captureFailures.set(cacheKey, failureMessage);
+  const failure = cacheCaptureFailure(lastError);
+  const failureMessage = failure.message;
+  captureFailures.set(cacheKey, failure);
   if (/curl:\s*\(28\)|ETIMEDOUT|ECONNREFUSED|Could not resolve host/i.test(failureMessage)) {
     providerTransportFailures.set(provider.slug, failureMessage);
   }
@@ -269,22 +272,7 @@ const corridorSummary = selectedCorridors.map((corridor) => {
     unsupported: items.filter((item) => item.status === "unsupported").length,
   };
 });
-const providerSummary = providers.map((provider) => {
-  const items = outcomes.filter((item) => item.provider === provider.slug);
-  const errors = new Map();
-  for (const item of items) {
-    if (item.status !== "failed") continue;
-    const reason = item.error || "Unknown failure";
-    errors.set(reason, (errors.get(reason) || 0) + 1);
-  }
-  return {
-    provider: provider.slug,
-    stored: items.filter((item) => item.status === "stored").length,
-    failed: items.filter((item) => item.status === "failed").length,
-    unsupported: items.filter((item) => item.status === "unsupported").length,
-    errors: [...errors.entries()].map(([error, count]) => ({ error, count })),
-  };
-});
+const providerSummary = summarizeProviders(providers, outcomes);
 const failures = outcomes
   .filter((item) => item.status === "failed")
   .map(({ corridor, provider, error }) => ({ corridor, provider, error }));

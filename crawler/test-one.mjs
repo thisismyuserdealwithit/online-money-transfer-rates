@@ -1,3 +1,4 @@
+import { moneyfex } from "./providers/moneyfex.mjs";
 import { chromium } from "playwright";
 import { atlanticMoney } from "./providers/atlanticmoney.mjs";
 import { currencyfair } from "./providers/currencyfair.mjs";
@@ -20,7 +21,7 @@ import { corridors } from "./corridors.mjs";
 
 const corridor = corridors.find((item) => item.slug === (process.env.CORRIDOR || "uk-to-spain"));
 if (!corridor) throw new Error("Test corridor missing");
-const providers = { wise, currencyfair, atlanticmoney: atlanticMoney, instarem, ria, taptapsend: taptapSend, paysend, westernunion, remitly, revolut, xe, singx, transfergo, starling, natwestbusiness: natWestBusiness, lloydsbusiness: lloydsBusiness, santanderuk: santanderUk };
+const providers = { moneyfex, wise, currencyfair, atlanticmoney: atlanticMoney, instarem, ria, taptapsend: taptapSend, paysend, westernunion, remitly, revolut, xe, singx, transfergo, starling, natwestbusiness: natWestBusiness, lloydsbusiness: lloydsBusiness, santanderuk: santanderUk };
 const provider = providers[process.env.PROVIDER || "currencyfair"];
 if (!provider) throw new Error("Test provider missing");
 if (provider.supports && !provider.supports(corridor)) throw new Error("Provider does not support test corridor");

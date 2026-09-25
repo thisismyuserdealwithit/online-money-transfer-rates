@@ -63,6 +63,7 @@ export async function ProofContent({ params }: { params: Promise<{ id: string }>
                 <div><dt>Recipient gets</dt><dd>{String(live.recipient_amount)} {String(live.recipient_currency)}</dd></div>
                 <div><dt>Rate used</dt><dd>{Number(live.exchange_rate).toLocaleString("en-GB", { maximumFractionDigits: 6 })}</dd></div>
                 <div><dt>Visible fee</dt><dd>{String(live.fee_amount)} {String(live.fee_currency)}</dd></div>
+                {typeof raw.totalDebit === "number" && Number.isFinite(raw.totalDebit) && raw.totalDebit > 0 && <div><dt>Total to pay</dt><dd>{raw.totalDebit} {String(live.source_currency)}</dd></div>}
                 <div><dt>Funding</dt><dd>{String(live.funding_method)}</dd></div>
                 <div><dt>Payout</dt><dd>{String(live.payout_method)}</dd></div>
                 {live.plan_name && <div><dt>Pricing basis</dt><dd>{String(live.plan_name)}</dd></div>}
@@ -71,6 +72,7 @@ export async function ProofContent({ params }: { params: Promise<{ id: string }>
                 {Number(live.promotion) === 1 && <div><dt>Offer</dt><dd>{String(live.plan_name ?? "First-transfer promotion")}</dd></div>}
                 <div><dt>Screenshot hash</dt><dd><code>{String(live.screenshot_sha256).slice(0, 18)}…</code></dd></div>
               </dl>
+              {typeof raw.warning === "string" && <p>{raw.warning}</p>}
             </aside>
           </div>
         </main>

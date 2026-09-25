@@ -2,6 +2,14 @@
 
 The public site stores structured quote records in D1 on Sites or Postgres on Render. Immutable screenshots use R2 on Sites. On Render they use a configured S3-compatible bucket, with Postgres as the initial fallback. A separate scheduled browser process visits public provider calculators and posts validated captures to `/api/ingest`.
 
+## Provider expansion (25 September 2026)
+
+The research directory now covers 40 providers, including NALA, MoneyFex, Remit Choice, Currencies Direct, TorFX and Moneycorp. Research-only entries have no editorial star score. Currencies Direct, TorFX and Moneycorp require customer-specific quotes. NALA's public feed lacks fees and payment conditions, so it is not ingested as a complete price.
+
+MoneyFex uses the public homepage calculator response for supported UK bank-deposit routes. It verifies the echoed amount, currencies, countries, rate, fee and total debit. Funding is not selected and fees are added to the sending amount, so all captures remain indicative and cannot win the standard bank-transfer ranking. Its receipt is explicitly labelled as a rendering of a public API response.
+
+The provider ledger at `/coverage` and the `providers` array in `/api/coverage` list fresh standard-case evidence, including zero-quote reviewed providers. Run summaries include every emitted provider, even when a comparison adapter supplies the record. Unsupported cached routes remain unsupported rather than becoming failures.
+
 ## Current provider adapters
 
 - Wise: verified only when the public page exposes both recipient amount and transfer fee. Otherwise stored as indicative.
@@ -13,7 +21,7 @@ The public site stores structured quote records in D1 on Sites or Postgres on Re
 - Remitly: first customer rates are stored as promotional and indicative. They never enter the standard winner calculation.
 - Instarem: monitored on UK outbound routes through its public bank transfer API and matching calculator. Anonymous first transfer rates are stored as promotional and indicative.
 - Ria Money Transfer: monitored where its public calculator offers bank account funding and bank deposit delivery. Its anonymous first transfer rate is labelled and excluded from the standard winner.
-- Wise comparison service: provides an hourly second evidence layer for banks and transfer companies returned for the exact amount, currencies and countries. Wise describes non-Wise rows as estimates based on quotes gathered from provider websites. These records are always indicative, show the Wise API response as proof and cannot win against a direct verified quote.
+- Wise comparison service: supplies an additional evidence layer for banks and transfer companies. Its estimates use previously collected markups against current market data and can use pricing from a higher transfer threshold. They are not real-time quotes for the requested amount (see https://wise.com/gb/compare/disclaimer). These records are always indicative, show the Wise API response as proof and cannot win against a direct verified quote.
 - Xe: records its timestamped public mid-market converter data for every supported currency pair. It is an indicative market reference, not a transferable quote; no customer fee or delivery availability is inferred.
 
 The corridor register contains 21 routes from the UK, the same 21 routes to the UK, and 10 major non-UK directions covering EUR/USD, USD/CAD, AUD/NZD, USD/AUD and EUR/CHF. The public `/coverage` ledger reads the quote archive and latest crawl runs directly so an empty corridor cannot be mistaken for a completed check.

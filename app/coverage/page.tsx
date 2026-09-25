@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridors } from "@/lib/data";
-import { getCoverageDashboard } from "@/lib/live-data";
+import { getCoverageDashboard, getProviderCoverage } from "@/lib/live-data";
+import { providerCollectionLabel, providerReviews } from "@/lib/reviews";
 import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -20,7 +21,14 @@ function checkedLabel(value: string | null) {
 }
 
 export default async function CoveragePage() {
-  const dashboard = await getCoverageDashboard();
+  const [dashboard, providerCoverage] = await Promise.all([getCoverageDashboard(), getProviderCoverage()]);
+  const reviewsBySlug = new Map(providerReviews.map((review) => [review.slug, review]));
+  const coverageByProvider = new Map(providerCoverage.map((row) => [row.providerSlug, row]));
+  const providerRows = [...new Set([...reviewsBySlug.keys(), ...coverageByProvider.keys()])].map((slug) => {
+    const review = reviewsBySlug.get(slug);
+    const live = coverageByProvider.get(slug);
+    return { slug, review, live, name: review?.name ?? live?.providerName ?? slug };
+  });
   const bySlug = new Map(dashboard.corridors.map((row) => [row.corridorSlug, row]));
   const populated = corridors.filter((corridor) => (bySlug.get(corridor.slug)?.providerCount ?? 0) > 0).length;
   const totalProviders = dashboard.corridors.reduce((sum, row) => sum + row.providerCount, 0);
@@ -61,6 +69,18 @@ export default async function CoveragePage() {
               );
             })}
           </div>
+
+          <section className="run-ledger" aria-labelledby="provider-ledger-title">
+            <div className="section-heading"><div><span className="kicker">PROVIDER BY PROVIDER</span><h2 id="provider-ledger-title">Which companies have current evidence?</h2><p>The research directory also includes companies without a captured rate. Collection labels describe how we seek a quote; the counts below show only fresh stored evidence.</p></div></div>
+            <div className="coverage-table">
+              <div className="coverage-head"><span>Provider and collection method</span><span>Routes</span><span>Type of evidence</span><span>Latest receipt</span></div>
+              {providerRows.map(({ slug, review, live, name }) => {
+                const contents = <><span><strong>{name}</strong><small>{providerCollectionLabel(review, Boolean(live))}</small></span><b>{live?.corridorCount ?? 0}</b><span><strong>{live?.verifiedCount ?? 0} verified</strong><small>{live?.indicativeCount ?? 0} indicative</small></span><span><strong>{live ? checkedLabel(live.latestCapturedAt) : "No current receipt"}</strong><small>{review ? "Read the provider research" : "Appears in the stored rate evidence"}</small></span></>;
+                const className = `coverage-row ${live ? "has-data" : "no-data"}`;
+                return review ? <Link className={className} href={`/reviews/${slug}`} key={slug}>{contents}</Link> : <div className={className} key={slug}>{contents}</div>;
+              })}
+            </div>
+          </section>
 
           <div className="run-ledger">
             <div className="section-heading"><div><span className="kicker">CHECKING HISTORY</span><h2>How the latest sweeps behaved</h2><p>A partial sweep stored at least one result, but another company blocked the journey or failed to produce a complete public quote.</p></div></div>

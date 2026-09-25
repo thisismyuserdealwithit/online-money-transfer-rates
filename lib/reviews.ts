@@ -1,3 +1,5 @@
+import { additionalProviderReviews } from "./provider-expansion";
+
 export type ReviewSource = {
   label: string;
   publisher: string;
@@ -9,7 +11,11 @@ export type ProviderReview = {
   name: string;
   mark: string;
   category: "Transfer specialist" | "Digital account" | "Bank" | "Cash network";
-  rating: number;
+  rating: number | null;
+  reviewedAt?: string;
+  byline?: string;
+  collectionMethod?: "public-calculator" | "account-quote" | "comparison-source";
+  collectionStatus?: "pending" | "active" | "review-only";
   verdict: string;
   bestFor: string;
   lessSuitableFor: string;
@@ -893,9 +899,20 @@ export const providerReviews: ProviderReview[] = [
     sources: [
       { label: "Asda Money", publisher: "Asda", url: "https://money.asda.com/" }
     ]
-  }
+  },
+  ...additionalProviderReviews,
 ];
 
 export function getProviderReview(slug: string) {
   return providerReviews.find((review) => review.slug === slug);
+}
+
+export function providerCollectionLabel(review: ProviderReview | undefined, hasEvidence = false) {
+  if (review?.collectionMethod === "account-quote") return review.collectionStatus === "review-only" ? "Review only · account quote required" : "Account quote required";
+  if (review?.collectionMethod === "public-calculator") {
+    return review.collectionStatus === "active" ? "Public calculator collection" : "No complete calculator quote";
+  }
+  if (review?.collectionMethod === "comparison-source") return "Comparison-source estimates";
+  if (review?.collectionStatus === "review-only") return "Review only";
+  return hasEvidence ? "Stored rate evidence" : "No fresh public quote";
 }

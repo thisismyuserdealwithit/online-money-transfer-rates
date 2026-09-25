@@ -107,7 +107,7 @@ export const wiseComparison = {
           sourceCountry: matching.sourceCountry,
           targetCountry: matching.targetCountry,
           isConsideredMidMarketRate: Boolean(matching.isConsideredMidMarketRate),
-          warning: "Wise describes non-Wise results as estimates based on quotes collected from provider websites, normally around once per hour. Confirm the final provider quote before sending.",
+          warning: "Wise estimates these rates using previously collected markups and current market data. Amounts may use pricing from a higher transfer threshold. This is not a real-time provider quote; confirm the final price before sending.",
         },
       }));
     }

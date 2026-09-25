@@ -244,3 +244,5 @@ nav a:hover { color:var(--green); }
   .tmc-compare-row strong{font-size:15px}
   .tmc-compare-row>a{grid-column:1/-1;width:100%}
 }
+
+.review-rating-card strong.review-unrated{font-size:34px;line-height:1.15;letter-spacing:-.02em}

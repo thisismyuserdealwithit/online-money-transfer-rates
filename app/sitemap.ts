@@ -54,7 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/reviews/${review.slug}`,
       lastModified: providerUpdated.get(review.slug)
         ? new Date(providerUpdated.get(review.slug)!)
-        : contentUpdated,
+        : review.reviewedAt ? new Date(review.reviewedAt) : contentUpdated,
       changeFrequency: "daily" as const,
       priority: 0.85,
     })),

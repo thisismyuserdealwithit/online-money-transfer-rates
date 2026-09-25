@@ -59,6 +59,14 @@ export function providerSlugFromName(provider: string) {
     "MoneyGram": "moneygram",
     "OFX": "ofx",
     "LemFi": "lemfi",
+    "NALA": "nala",
+    "Nala": "nala",
+    "Moneyfex": "moneyfex",
+    "RemitChoice": "remitchoice",
+    "Remit Choice": "remitchoice",
+    "Currencies Direct": "currenciesdirect",
+    "TorFX": "torfx",
+    "Moneycorp": "moneycorp",
   };
   return matches[provider] ?? provider.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }

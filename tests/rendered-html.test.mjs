@@ -489,11 +489,22 @@ test("renders the rate review desk and provider reviews", async () => {
   assert.equal(deskResponse.status, 200);
   const deskHtml = await deskResponse.text();
   assert.match(deskHtml, /A pleasant app does not rescue an expensive exchange rate/);
-  assert.match(deskHtml, /<strong>34<\/strong>/);
+  assert.match(deskHtml, /<strong>40<\/strong>/);
   assert.match(deskHtml, /companies examined/);
   assert.match(deskHtml, /UK bank transfer reviews/);
   assert.match(deskHtml, /Wise/);
   assert.match(deskHtml, /Lloyds Bank Business/);
+
+  for (const slug of ["nala", "moneyfex", "remitchoice", "currenciesdirect", "torfx", "moneycorp"]) {
+    const response = await worker.fetch(new Request(`http://localhost/reviews/${slug}`, { headers: { accept: "text/html" } }), bindings, context);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, /OMT research desk/);
+    assert.match(html, /Not rated/);
+    assert.match(html, /"dateModified":"2026-09-25"/);
+    assert.doesNotMatch(html, /"reviewRating"/);
+    assert.match(html, /content="index, follow"/);
+  }
 
   const xeResponse = await worker.fetch(
     new Request("http://localhost/reviews/xe", { headers: { accept: "text/html" } }),

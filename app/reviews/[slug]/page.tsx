@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getCorridor, money } from "@/lib/data";
 import { getProviderRateEvidence } from "@/lib/live-data";
-import { getProviderReview, providerReviews, reviewsUpdated } from "@/lib/reviews";
+import { getProviderReview, providerCollectionLabel, providerReviews, reviewsUpdated } from "@/lib/reviews";
 import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -18,16 +18,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const review = getProviderReview(slug);
   if (!review) return {};
-  return pageMetadata({
+  return { ...pageMetadata({
     title: `${review.name} Review: Exchange Rates and Fees`,
-    description: `${review.name} rate review using current corridor evidence, visible fees and the amount delivered. Compare the service directly with competing transfer providers.`,
+    description: review.rating === null ? review.verdict : `${review.name} rate review using current corridor evidence, visible fees and the amount delivered. Compare the service directly with competing transfer providers.`,
     path: `/reviews/${review.slug}`,
     type: "article",
-    modifiedTime: "2026-07-29",
-    authors: ["Russell Gous", "Alon Rajic"],
-    socialTitle: `${review.name} rate review and live evidence`,
+    modifiedTime: review.reviewedAt ?? "2026-07-29",
+    authors: review.byline ? [review.byline] : ["Russell Gous", "Alon Rajic"],
+    socialTitle: review.rating === null ? `${review.name} provider research` : `${review.name} rate review and live evidence`,
     socialDescription: review.verdict,
-  });
+  }), ...(review.byline ? { authors: [{ name: review.byline, url: "https://onlinemoneytransfer.co.uk/about" }] } : {}) };
 }
 
 function capturedLabel(value: string) {
@@ -51,16 +51,21 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
   const related = review.comparisonSlugs
     .map((comparisonSlug) => getProviderReview(comparisonSlug))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const updatedLabel = review.reviewedAt
+    ? new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(review.reviewedAt))
+    : reviewsUpdated;
 
   const reviewSchema = {
     "@context": "https://schema.org",
     "@type": "Review",
     name: `${review.name} exchange rate and fee review`,
-    dateModified: "2026-07-23",
-    author: { "@type": "Person", name: "Russell Gous", url: "https://onlinemoneytransfer.co.uk/authors/russell-gous" },
+    dateModified: review.reviewedAt ?? "2026-07-23",
+    author: review.byline
+      ? { "@type": "Organization", name: review.byline, url: "https://onlinemoneytransfer.co.uk/about" }
+      : { "@type": "Person", name: "Russell Gous", url: "https://onlinemoneytransfer.co.uk/authors/russell-gous" },
     reviewBody: review.verdict,
     itemReviewed: { "@type": "FinancialService", name: review.name },
-    reviewRating: { "@type": "Rating", ratingValue: review.rating, bestRating: 5, worstRating: 1 },
+    ...(review.rating === null ? {} : { reviewRating: { "@type": "Rating", ratingValue: review.rating, bestRating: 5, worstRating: 1 } }),
     publisher: { "@type": "Organization", name: "Finofin Limited", url: "https://onlinemoneytransfer.co.uk/about" },
   };
 
@@ -87,13 +92,11 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
                 <span className="kicker">{review.category.toUpperCase()} · PRICE AND SERVICE REVIEW</span>
                 <h1>{review.name} rates: what you pay, and what you get for it</h1>
                 <p>{review.verdict}</p>
-                <div className="review-byline"><span>Written by <Link href="/authors/russell-gous">Russell Gous</Link></span><span>Evidence reviewed by <Link href="/authors/alon-rajic">Alon Rajic</Link></span><span>Updated {reviewsUpdated}</span></div>
+                <div className="review-byline">{review.byline ? <span>Research by <Link href="/about">{review.byline}</Link></span> : <><span>Written by <Link href="/authors/russell-gous">Russell Gous</Link></span><span>Evidence reviewed by <Link href="/authors/alon-rajic">Alon Rajic</Link></span></>}<span>Updated {updatedLabel}</span></div>
               </div>
               <aside className="review-rating-card">
                 <span>EDITORIAL RATING</span>
-                <strong>{review.rating.toFixed(1)}<small>/5</small></strong>
-                <div aria-label={`${review.rating} out of 5 stars`}>{"★★★★★".split("").map((star, index) => <i className={index < Math.round(review.rating) ? "filled" : ""} key={index}>{star}</i>)}</div>
-                <p>This is our view of the whole service. Today&apos;s cheapest quote is a separate question.</p>
+                {review.rating === null ? <><strong className="review-unrated">Not rated</strong><p>This research covers published service terms. We have not assigned an editorial score.</p></> : <><strong>{review.rating.toFixed(1)}<small>/5</small></strong><div aria-label={`${review.rating} out of 5 stars`}>{"★★★★★".split("").map((star, index) => <i className={index < Math.round(review.rating as number) ? "filled" : ""} key={index}>{star}</i>)}</div><p>This is our view of the whole service. Today&apos;s cheapest quote is a separate question.</p></>}
                 <a href={`/go/${review.slug}?placement=review-hero`} rel="sponsored nofollow">Recheck {review.name}&apos;s price</a>
               </aside>
             </div>
@@ -111,6 +114,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
                 <article><strong>{latest ? capturedLabel(latest).replace(" UTC", "") : "Pending"}</strong><span>latest provider check</span></article>
               </div>
               <p>A win requires a completed, non-promotional quote at the same sending amount. Converter rates and modelled bank prices remain useful evidence, though neither is allowed to wear the winner&apos;s badge.</p>
+              {review.collectionMethod && <p><strong>{providerCollectionLabel(review, evidence.length > 0)}.</strong> {review.collectionMethod === "account-quote" ? "Published service terms are reviewed here; a customer-specific rate requires an account or a quote from the provider." : review.collectionStatus === "active" ? "Stored receipts below show which routes have returned usable evidence." : "A complete public calculator quote has not been captured. No rate is claimed until a usable receipt has been stored."}</p>}
             </section>
 
             <section className="review-fast-facts">
@@ -168,7 +172,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
               ) : (
                 <div className="review-evidence-empty">
                   <strong>We do not have a reproducible public quote right now</strong>
-                  <p>{review.name} remains here because UK customers will still encounter it. A rate will appear only when the amount and payment method can be recorded with a time and receipt.</p>
+                  <p>{review.collectionMethod === "account-quote" ? "This is a review of the provider’s published service. Request a customer-specific quote directly; we have not collected an anonymous public transfer rate." : `${review.name} remains here because UK customers will still encounter it. A rate will appear only when the amount and payment method can be recorded with a time and receipt.`}</p>
                 </div>
               )}
             </section>
@@ -202,7 +206,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
 
           <aside className="review-side-rail">
             <div><span className="kicker">PRICE THE ROUTE</span><p>Put {review.name} beside every company captured for the same sending amount.</p><Link href="/#corridors">Choose the transfer →</Link></div>
-            <div><span className="kicker">ABOUT THE RATING</span><p>The score covers the service. The price ranking starts again on every route.</p><Link href="/reviews">Compare all company reviews →</Link></div>
+            <div><span className="kicker">ABOUT THE RATING</span><p>{review.rating === null ? "No editorial score has been assigned. Read the source documents and check the provider’s quote for your transfer." : "The score covers the service. The price ranking starts again on every route."}</p><Link href="/reviews">Compare all company reviews →</Link></div>
           </aside>
         </div>
       </main>

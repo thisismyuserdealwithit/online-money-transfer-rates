@@ -46,6 +46,10 @@ const providerDestinations: Record<string, string> = {
   torfx: "https://www.torfx.com/",
   keycurrency: "https://www.keycurrency.co.uk/",
   currenciesdirect: "https://www.currenciesdirect.com/en-gb/",
+  nala: "https://www.nala.com/",
+  moneyfex: "https://www.moneyfex.com/",
+  remitchoice: "https://www.remitchoice.com/",
+  moneycorp: "https://www.moneycorp.com/en-gb/",
 };
 
 function configuredLinks() {

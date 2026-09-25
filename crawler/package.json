@@ -6,7 +6,7 @@
   "scripts": {
     "crawl": "node run.mjs",
     "install:browsers": "playwright install --with-deps chromium",
-    "test": "node --test providers/*.test.mjs"
+    "test": "node --test providers/*.test.mjs reporting.test.mjs"
   },
   "dependencies": {
     "playwright": "1.54.1"
