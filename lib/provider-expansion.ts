@@ -43,7 +43,7 @@ export const additionalProviderReviews: ProviderReview[] = [
     reviewedAt: "2026-09-25",
     byline: "OMT research desk",
     collectionMethod: "public-calculator",
-    collectionStatus: "active",
+    collectionStatus: "ready",
     verdict: "MoneyFex's public calculator returns rates, fees and recipient amounts for supported routes. We report these as indicative estimates: funding is not selected at this stage, so they do not qualify for our cheapest-provider rankings.",
     bestFor: "Customers checking an additional provider for a supported bank or mobile-wallet payment.",
     lessSuitableFor: "Anyone needing a verified universal fee schedule or a guaranteed delivery time before obtaining a quote.",

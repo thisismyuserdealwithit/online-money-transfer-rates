@@ -6,7 +6,7 @@ The public site stores structured quote records in D1 on Sites or Postgres on Re
 
 The research directory now covers 40 providers, including NALA, MoneyFex, Remit Choice, Currencies Direct, TorFX and Moneycorp. Research-only entries have no editorial star score. Currencies Direct, TorFX and Moneycorp require customer-specific quotes. NALA's public feed lacks fees and payment conditions, so it is not ingested as a complete price.
 
-MoneyFex uses the public homepage calculator response for supported UK bank-deposit routes. It verifies the echoed amount, currencies, countries, rate, fee and total debit. Funding is not selected and fees are added to the sending amount, so all captures remain indicative and cannot win the standard bank-transfer ranking. Its receipt is explicitly labelled as a rendering of a public API response.
+MoneyFex has passed eight route capture tests, but daily activation is pending GitHub workflow-write permission. The proposed workflow is preserved in the deployment workspace. Its adapter uses the public homepage calculator response for supported UK bank-deposit routes. It verifies the echoed amount, currencies, countries, rate, fee and total debit. Funding is not selected and fees are added to the sending amount, so all captures remain indicative and cannot win the standard bank-transfer ranking. Its receipt is explicitly labelled as a rendering of a public API response.
 
 The provider ledger at `/coverage` and the `providers` array in `/api/coverage` list fresh standard-case evidence, including zero-quote reviewed providers. Run summaries include every emitted provider, even when a comparison adapter supplies the record. Unsupported cached routes remain unsupported rather than becoming failures.
 

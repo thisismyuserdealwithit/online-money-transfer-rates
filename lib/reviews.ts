@@ -15,7 +15,7 @@ export type ProviderReview = {
   reviewedAt?: string;
   byline?: string;
   collectionMethod?: "public-calculator" | "account-quote" | "comparison-source";
-  collectionStatus?: "pending" | "active" | "review-only";
+  collectionStatus?: "pending" | "ready" | "active" | "review-only";
   verdict: string;
   bestFor: string;
   lessSuitableFor: string;
@@ -910,7 +910,7 @@ export function getProviderReview(slug: string) {
 export function providerCollectionLabel(review: ProviderReview | undefined, hasEvidence = false) {
   if (review?.collectionMethod === "account-quote") return review.collectionStatus === "review-only" ? "Review only · account quote required" : "Account quote required";
   if (review?.collectionMethod === "public-calculator") {
-    return review.collectionStatus === "active" ? "Public calculator collection" : "No complete calculator quote";
+    return review.collectionStatus === "active" ? "Public calculator collection" : review.collectionStatus === "ready" ? "Collector tested · daily collection not enabled" : "No complete calculator quote";
   }
   if (review?.collectionMethod === "comparison-source") return "Comparison-source estimates";
   if (review?.collectionStatus === "review-only") return "Review only";
