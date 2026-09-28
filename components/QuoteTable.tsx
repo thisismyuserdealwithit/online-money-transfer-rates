@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { Corridor, money, monitoredProviders, providerSlugFromName, Quote } from "@/lib/data";
 import { hasProviderDestination } from "@/lib/affiliate";
+import { getProviderReview } from "@/lib/reviews";
 import { TopMoneyCompareRow } from "@/components/TopMoneyCompareRow";
 
 function compareQuotes(a: Quote, b: Quote) {
@@ -13,13 +14,20 @@ function compareQuotes(a: Quote, b: Quote) {
   return b.recipientGets - a.recipientGets;
 }
 
+function ProviderName({ provider, slug }: { provider: string; slug?: string }) {
+  const review = getProviderReview(slug || providerSlugFromName(provider));
+  return review
+    ? <Link className="provider-review-link" href={`/reviews/${review.slug}`}>{provider}</Link>
+    : <strong>{provider}</strong>;
+}
+
 function UnavailableRow({ provider, mark, unavailable }: { provider: string; mark: string; unavailable?: string }) {
   const bestRated = provider === "Xe";
   return (
     <article className={`quote-row quote-unavailable ${bestRated ? "quote-featured" : ""}`}>
       <div className="provider-cell">
         <div className={`provider-mark provider-${mark.toLowerCase()}`}>{mark}</div>
-        <div><Link className="provider-review-link" href={`/reviews/${providerSlugFromName(provider)}`}>{provider}</Link><small>{unavailable ?? "No usable public quote in this sweep"}</small></div>
+        <div><ProviderName provider={provider} /><small>{unavailable ?? "No usable public quote in this sweep"}</small></div>
         {bestRated && <b className="best-tag">Best Rated</b>}
       </div>
       <div className="rate-cell"><strong>Not available</strong><small>No rate to compare</small></div>
@@ -55,7 +63,7 @@ export function QuoteTable({ corridor, compact = false }: { corridor: Corridor; 
               <div className="provider-cell">
                 <div className={`provider-mark provider-${quote.mark.toLowerCase()}`}>{quote.mark}</div>
                 <div>
-                  <Link className="provider-review-link" href={`/reviews/${quote.providerSlug || providerSlugFromName(quote.provider)}`}>{quote.provider}</Link>
+                  <ProviderName provider={quote.provider} slug={quote.providerSlug} />
                   <small>{quote.delivery}</small>
                   {quote.status !== "stale" && hasProviderDestination(quote.providerSlug || providerSlugFromName(quote.provider)) && (
                     <a
