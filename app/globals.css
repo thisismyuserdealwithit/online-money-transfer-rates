@@ -255,3 +255,5 @@ nav a:hover { color:var(--green); }
 .review-rating-card strong.review-unrated{font-size:34px;line-height:1.15;letter-spacing:-.02em}
 
 .comparison-home .steps-grid{border-top-color:#c5d7cb}.comparison-home .steps-grid p{color:#4e6658}.comparison-home .steps-grid b{color:#21694c;font-size:18px}.comparison-home .steps-grid a{display:inline-block;margin-top:16px;color:#176346;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+
+.review-main{min-width:0}
