@@ -113,7 +113,7 @@ export default function ApiPage() {
             </div>
             <p className="api-note">Discover every valid route at <Link href="/api/v1/corridors"><code>GET /api/v1/corridors</code></Link>.</p>
             <div className="api-fields">
-              <article><strong>current.rates</strong><p>The latest usable record per provider, matching the logic of the main OMT table.</p></article>
+              <article><strong>current.rates</strong><p>The latest usable record per provider within the API&apos;s 36-hour freshness window. Website tables also show older saved results in grey; those fallbacks are not included here.</p></article>
               <article><strong>history</strong><p>Exact comparison sweeps, ordered from newest to oldest.</p></article>
               <article><strong>receiptUrl</strong><p>The evidence page for one provider result on the relevant OMT corridor.</p></article>
               <article><strong>eligibleForPriceRanking</strong><p>True only for a fresh, verified and non-promotional bank transfer quote.</p></article>

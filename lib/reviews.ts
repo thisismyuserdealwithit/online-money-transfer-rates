@@ -693,7 +693,7 @@ export const providerReviews: ProviderReview[] = [
     analysis: [
       "Monese is best understood as an account subscription, not a standalone transfer engine. Someone using its card and account every week may spread the monthly cost across several benefits. Someone sending £200 once cannot.",
       "The transfer review therefore needs the customer's plan and remaining allowance. A no-extra-fee transfer on a paid plan is not economically free, but nor should the entire monthly fee be assigned to one payment for a regular user.",
-      "Where no current public quote can be captured, we show Monese as unavailable rather than borrowing a rate from a different plan or date."
+      "Where no public quote is captured today, the table shows the latest matching saved result in grey with its original date. If no matching result exists, Monese appears only in the coverage note."
     ],
     comparisonSlugs: ["revolut", "wise", "starling"],
     sources: [

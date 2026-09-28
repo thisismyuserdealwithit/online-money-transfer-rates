@@ -6,7 +6,7 @@ import { QuoteTable } from "@/components/QuoteTable";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridorGroups, corridors, money } from "@/lib/data";
-import { getLatestQuotes } from "@/lib/live-data";
+import { getDisplayQuotes } from "@/lib/live-data";
 import { defaultDescription, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -33,7 +33,7 @@ function CorridorGrid({ items }: { items: typeof corridors }) {
 
 export default async function Home() {
   const featuredBase = corridors[0];
-  const liveQuotes = await getLatestQuotes(featuredBase.slug);
+  const { quotes: liveQuotes, available: resultsAvailable } = await getDisplayQuotes(featuredBase.slug);
   const featured = { ...featuredBase, quotes: liveQuotes };
   const best = liveQuotes.filter((quote) => quote.eligibleForPriceRanking).sort((a, b) => b.recipientGets - a.recipientGets)[0];
   const sourceAmount = best?.sourceAmount ?? featured.testAmount;
@@ -56,7 +56,7 @@ export default async function Home() {
               <div className="receipt-route"><div><small>You send</small><strong>{money(sourceAmount, featured.fromCurrency)}</strong><span>{featured.fromCurrency} · Bank transfer</span></div><i>→</i><div><small>They receive</small><strong>{best ? money(best.recipientGets, featured.toCurrency) : "Pending"}</strong><span>{featured.toCurrency} · Bank deposit</span></div></div>
               <div className="receipt-lines"><div><span>Provider</span><strong>{best?.provider ?? "Manual check"}</strong></div><div><span>Quoted rate</span><strong>{best?.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 }) ?? "Pending"}</strong></div><div><span>Transfer fee</span><strong>{best ? money(best.fee, best.feeCurrency ?? featured.fromCurrency) : "Pending"}</strong></div></div>
               <div className="receipt-stamp"><div>PUBLIC QUOTE<br /><b>{best ? best.checkedAt.split(",")[0].toUpperCase() : "IN PROGRESS"}</b></div><span>Screenshot<br />{best ? "stored" : "pending"}</span></div>
-              {!best && <p className="sample-warning">The latest manual check has not landed yet, so we are not dressing an old rate up as today&apos;s.</p>}
+              {!best && <p className="sample-warning">{resultsAvailable ? "No comparable completed quote has been collected today. Any older results in the table are dated and shown in grey." : "Saved results are temporarily unavailable. Please try again shortly."}</p>}
             </aside>
           </div>
         </section>
@@ -64,9 +64,9 @@ export default async function Home() {
         <section className="trust-strip"><div className="shell"><span>A fairer way to compare the quote</span><strong>Same amount</strong><i /> <strong>Same payment route</strong><i /> <strong>Short checking window</strong><i /> <strong>Proof kept</strong></div></section>
 
         <section className="section shell" id="corridors">
-          <div className="section-heading"><div><span className="kicker">LATEST CHECK</span><h2>What {money(sourceAmount, featured.fromCurrency)} buys in Spain today</h2><p>A completed transfer quote can win. A currency converter cannot.</p></div><Link href={`/${featured.slug}`}>See every provider and receipt →</Link></div>
-          <QuoteTable corridor={featured} compact />
-          <p className="data-caveat">Every published figure has a stored capture behind it. We show indicative rates, but they stay out of the cheapest-rate claim.</p>
+          <div className="section-heading"><div><span className="kicker">LATEST CHECK</span><h2>Latest results for sending {money(sourceAmount, featured.fromCurrency)} to Spain</h2><p>Today&apos;s completed quotes can be compared. Older results remain visible in grey with their original dates.</p></div><Link href={`/${featured.slug}`}>See every provider and receipt →</Link></div>
+          <QuoteTable corridor={featured} compact resultsAvailable={resultsAvailable} />
+          <p className="data-caveat">Each provider shows its freshest saved result. Previous results and indicative rates stay out of today&apos;s cheapest-rate claim. All check dates use UTC.</p>
         </section>
 
         <section className="how-section">
@@ -75,7 +75,7 @@ export default async function Home() {
             <div className="steps-grid">
               <article><b>01</b><h3>Use one ordinary transfer</h3><p>New UK checks start with £200 sent from a bank account to another bank account. Historic records keep the amount used at the time.</p></article>
               <article><b>02</b><h3>Keep the checkout screen</h3><p>We record the rate and fee, plus what reaches the recipient. The payment route and time sit beside the captured provider screen.</p></article>
-              <article><b>03</b><h3>Replace the headline, keep the history</h3><p>The newest successful check becomes current. Yesterday&apos;s quote stays in the archive, where an inconvenient old result belongs.</p></article>
+              <article><b>03</b><h3>Keep the latest result and its date</h3><p>A new check replaces the provider&apos;s displayed result. When today has no result, the previous one stays visible in grey and outside the price ranking.</p></article>
             </div>
           </div>
         </section>

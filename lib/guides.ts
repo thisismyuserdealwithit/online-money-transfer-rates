@@ -89,7 +89,7 @@ export const guides: Guide[] = [
       title: "Popular comparisons, pulled from the same evidence as our corridor pages",
       intro: "Each panel reads the newest verified public quotes in our database. Xe remains marked Best Rated; every amount and fee links back to the captured provider screen.",
       slugs: ["uk-to-spain", "uk-to-united-states", "uk-to-india", "uk-to-pakistan"],
-      note: "These are live observations, not a permanent ranking. An unavailable or indicative provider stays visible on the full corridor page but cannot be called cheapest. Recheck the provider's final screen before payment."
+      note: "These are live observations, not a permanent ranking. Corridor pages retain older results in grey and list providers without saved results in a note. Older and indicative results cannot be called cheapest. Recheck the provider's final screen before payment."
     },
     sections: [
       {
@@ -130,7 +130,7 @@ export const guides: Guide[] = [
       label: "USE THE DATA",
       title: "Go from a general rule to the route in front of you",
       items: [
-        { eyebrow: "Compare", title: "Browse every UK corridor", description: "Open the full provider tables, unavailable results and timestamped proof archive.", href: "/#corridors" },
+        { eyebrow: "Compare", title: "Browse every UK corridor", description: "Open the latest provider results, coverage notes and timestamped proof archive.", href: "/#corridors" },
         { eyebrow: "Audit", title: "Read how a quote qualifies", description: "See why promotional, stale and indicative results cannot win the standard comparison.", href: "/methodology" },
         { eyebrow: "Research", title: "The £2.10 cash penalty", description: "See how cash collection changes the cost of a £200 UK transfer across 33 destinations.", href: "/research/last-mile-tax" }
       ]

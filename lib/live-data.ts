@@ -1,6 +1,7 @@
 import { query, queryOne } from "@/lib/platform-runtime";
 import { getCorridor, type Quote } from "@/lib/data";
 import { COMPARISON_FRESHNESS_MS, isFreshComparableCase, isRankEligible } from "@/lib/comparison-case";
+import { loadDisplayQuoteRecords, selectDisplayQuotes } from "@/lib/display-quotes";
 
 type D1Row = {
   id: string;
@@ -168,6 +169,20 @@ export async function getLatestQuotes(corridorSlug: string): Promise<Quote[]> {
     return [...latest.values()].map(asQuote).sort((a, b) => Number(b.eligibleForPriceRanking) - Number(a.eligibleForPriceRanking) || b.recipientGets - a.recipientGets);
   } catch {
     return [];
+  }
+}
+
+export type DisplayQuoteResult = { quotes: Quote[]; available: boolean };
+
+export async function getDisplayQuotes(corridorSlug: string): Promise<DisplayQuoteResult> {
+  const corridor = getCorridor(corridorSlug);
+  if (!corridor) return { quotes: [], available: true };
+  const now = Date.now();
+  try {
+    const rows = await loadDisplayQuoteRecords((sql, params) => query<D1Row>(sql, params), corridor, now);
+    return { quotes: selectDisplayQuotes(corridor, rows, asQuote, now), available: true };
+  } catch {
+    return { quotes: [], available: false };
   }
 }
 

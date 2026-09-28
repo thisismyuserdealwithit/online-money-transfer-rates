@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getCorridor, money } from "@/lib/data";
 import { getGuide, guideWordCount, guides } from "@/lib/guides";
-import { getLatestQuotes } from "@/lib/live-data";
+import { getDisplayQuotes } from "@/lib/live-data";
 import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -43,14 +43,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     ? await Promise.all(guide.liveComparison.slugs.map(async (corridorSlug) => {
         const corridor = getCorridor(corridorSlug);
         if (!corridor) return null;
-        const quotes = (await getLatestQuotes(corridorSlug))
+        const results = await getDisplayQuotes(corridorSlug);
+        const quotes = results.quotes
           .filter((quote) => quote.eligibleForPriceRanking)
           .sort((a, b) => {
             if (a.provider === "Xe") return -1;
             if (b.provider === "Xe") return 1;
             return b.recipientGets - a.recipientGets;
           });
-        return { corridor, quotes, sourceAmount: quotes[0]?.sourceAmount ?? corridor.testAmount };
+        return { corridor, quotes, available: results.available, sourceAmount: quotes[0]?.sourceAmount ?? corridor.testAmount };
       }))
     : [];
   const articleSchema = {
@@ -123,7 +124,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                   <div><h2>{guide.liveComparison.title}</h2><p>{guide.liveComparison.intro}</p></div>
                 </header>
                 <div className="guide-live-grid">
-                  {liveComparisons.filter((item): item is NonNullable<typeof item> => item !== null).map(({ corridor, quotes, sourceAmount }) => (
+                  {liveComparisons.filter((item): item is NonNullable<typeof item> => item !== null).map(({ corridor, quotes, available, sourceAmount }) => (
                     <section key={corridor.slug}>
                       <div className="guide-live-route">
                         <span>{corridor.fromCode} → {corridor.toCode}</span>
@@ -140,7 +141,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                           ))}
                         </div>
                       ) : (
-                        <p className="guide-live-pending">No completed public quote is current right now. The route remains open, including the providers that failed, until the next usable receipt arrives.</p>
+                        <p className="guide-live-pending">{available ? "No comparable completed quote has been collected today. Open the route for the latest saved results and coverage note." : "Saved results are temporarily unavailable. Please try again shortly."}</p>
                       )}
                       <Link className="guide-live-open" href={`/${corridor.slug}`}>See the full rate check →</Link>
                     </section>

@@ -134,12 +134,13 @@ test("renders SWIFT, BIC and country bank-detail checks", async () => {
     /href="https:\/\/www\.topmoneycompare\.co\.uk\/transfer-money\/united-kingdom-to-united-states\?amount=200"/,
   );
 
-  const xeIndex = corridorHtml.indexOf('href="/reviews/xe"');
-  const moreProvidersIndex = corridorHtml.indexOf('class="tmc-compare-row"');
-  const wiseIndex = corridorHtml.indexOf('href="/reviews/wise"');
-  assert.ok(xeIndex >= 0, "Xe listing should render on the corridor");
-  assert.ok(moreProvidersIndex > xeIndex, "TopMoneyCompare box should follow Xe");
-  assert.ok(wiseIndex < 0 || moreProvidersIndex < wiseIndex, "TopMoneyCompare box should precede Wise");
+  // This fixture has no database. A failed lookup cannot establish that the
+  // providers have no history, so it must use the temporary-unavailable state.
+  assert.doesNotMatch(corridorHtml, /<article\b[^>]*class="quote-row\b/);
+  assert.doesNotMatch(corridorHtml, /quote-unavailable|href="\/reviews\/(?:xe|wise)"/);
+  assert.match(corridorHtml, /Saved results are temporarily unavailable\. Please try again shortly\./);
+  assert.doesNotMatch(corridorHtml, /quote-missing-note|No saved results for this transfer yet/);
+  assert.equal([...corridorHtml.matchAll(/class="tmc-compare-row"/g)].length, 1);
 
   const homeResponse = await worker.fetch(
     new Request("http://localhost/", { headers: { accept: "text/html" } }),

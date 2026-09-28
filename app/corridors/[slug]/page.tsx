@@ -6,7 +6,7 @@ import { CorridorBankDetails } from "@/components/CorridorBankDetails";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridors, getCorridor, money, monitoredProviders } from "@/lib/data";
-import { getLatestQuotes, getQuoteHistory } from "@/lib/live-data";
+import { getDisplayQuotes, getQuoteHistory } from "@/lib/live-data";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -37,13 +37,16 @@ export default async function CorridorAliasPage({ params }: { params: Promise<{ 
 export async function renderCorridorPage(slug: string) {
   const baseCorridor = getCorridor(slug);
   if (!baseCorridor) notFound();
-  const [liveQuotes, history] = await Promise.all([getLatestQuotes(slug), getQuoteHistory(slug)]);
-  const corridor = liveQuotes.length ? { ...baseCorridor, quotes: liveQuotes } : baseCorridor;
+  const [displayResults, history] = await Promise.all([getDisplayQuotes(slug), getQuoteHistory(slug)]);
+  const { quotes: displayQuotes, available: resultsAvailable } = displayResults;
+  const corridor = { ...baseCorridor, quotes: displayQuotes };
+  const todayQuotes = displayQuotes.filter((quote) => quote.status !== "stale");
+  const historicalCount = displayQuotes.length - todayQuotes.length;
   const verified = corridor.quotes.filter((quote) => quote.eligibleForPriceRanking).sort((a, b) => b.recipientGets - a.recipientGets);
-  const comparableLiveQuotes = liveQuotes.filter((quote) => quote.eligibleForPriceRanking);
+  const comparableLiveQuotes = displayQuotes.filter((quote) => quote.eligibleForPriceRanking);
   const best = verified[0];
   const sourceAmount = corridor.testAmount;
-  const newestQuote = [...liveQuotes].sort((a, b) => Date.parse(b.capturedAt ?? "") - Date.parse(a.capturedAt ?? ""))[0];
+  const newestQuote = [...displayQuotes].sort((a, b) => Date.parse(b.capturedAt ?? "") - Date.parse(a.capturedAt ?? ""))[0];
   const newestComparableQuote = [...comparableLiveQuotes].sort((a, b) => Date.parse(b.capturedAt ?? "") - Date.parse(a.capturedAt ?? ""))[0];
   const canonical = `https://onlinemoneytransfer.co.uk/${slug}`;
   const schema = [
@@ -80,19 +83,19 @@ export async function renderCorridorPage(slug: string) {
             <div className="crumbs"><Link href="/">Home</Link><span>›</span><Link href="/#corridors">Corridors</Link><span>›</span><b>{corridor.fromCountry} to {corridor.toCountry}</b></div>
             <div className="corridor-title-row">
               <div><span className="route-flags">{corridor.fromCode} <i>→</i> {corridor.toCode}</span><h1>What does it cost to send money from {corridor.fromCountry} to {corridor.toCountry}?</h1><p>We test a {money(sourceAmount, corridor.fromCurrency)} personal bank transfer and rank the amount that reaches the recipient.</p></div>
-              <div className="status-card"><span><i /> {liveQuotes.length ? "Most recent sweep" : "Manual check due"}</span><strong>{newestQuote?.checkedAt ?? "No current record"}</strong><small>A new collection is scheduled every 24 hours</small></div>
+              <div className="status-card"><span><i /> {!resultsAvailable ? "Results temporarily unavailable" : todayQuotes.length ? "Latest result today" : displayQuotes.length ? "Latest saved result" : "Awaiting a result"}</span><strong>{newestQuote?.checkedAt ?? (resultsAvailable ? "No saved record" : "Please try again shortly")}</strong><small>Checks are dated in UTC · collection scheduled daily</small></div>
             </div>
           </div>
         </section>
         <section className="section shell corridor-results">
           <div className="result-summary">
-            <div><span>Most money delivered by a verified quote</span><strong>{best ? money(best.recipientGets, corridor.toCurrency) : "Pending"}</strong><small>{best ? `${best.provider} · receipt available` : "The current sweep has not produced a complete quote"}</small></div>
+            <div><span>Most money delivered by a verified quote today</span><strong>{best ? money(best.recipientGets, corridor.toCurrency) : resultsAvailable ? "Pending" : "Unavailable"}</strong><small>{best ? `${best.provider} · receipt available` : resultsAvailable ? "No comparable completed quote collected today" : "Saved results could not be loaded"}</small></div>
             <div><span>Gap between completed quotes</span><strong>{verified.length > 1 ? money(verified[0].recipientGets - verified[verified.length - 1].recipientGets, corridor.toCurrency) : "Pending"}</strong><small>Measured on the same {money(sourceAmount, corridor.fromCurrency)} transfer</small></div>
-            <div><span>Companies on our watchlist</span><strong>{monitoredProviders.length}</strong><small>{corridor.quotes.length} returned evidence · {verified.length} can be compared directly</small></div>
+            <div><span>Companies on our watchlist</span><strong>{monitoredProviders.length}</strong><small>{resultsAvailable ? `${todayQuotes.length} results today · ${historicalCount} previous results · ${verified.length} comparable today` : "Saved results are temporarily unavailable"}</small></div>
           </div>
-          <div className="section-heading table-title"><div><span className="kicker">PROVIDER RESULTS</span><h2>Today&apos;s quotes, including the misses</h2><p>Xe appears first as our Best Rated service. Price order then follows comparable recipient amounts; unsupported calculators remain visible rather than quietly disappearing.</p></div></div>
-          <QuoteTable corridor={corridor} />
-          <p className="data-caveat">{liveQuotes.length ? "Open any proof link to see the screen behind the figure. A missing public quote is shown as unavailable, and the provider should be checked again before money leaves your account." : "We have not substituted a sample rate. The provider list stays in place while the next successful captures are collected."}</p>
+          <div className="section-heading table-title"><div><span className="kicker">PROVIDER RESULTS</span><h2>Latest available provider results</h2><p>Each provider shows its latest result from today, or its freshest saved result in grey. Previous results and calculator estimates stay outside today&apos;s price ranking.</p></div></div>
+          <QuoteTable corridor={corridor} resultsAvailable={resultsAvailable} />
+          <p className="data-caveat">Open a receipt to inspect the saved evidence and its UTC date. Grey results are historical reference points; recheck the provider&apos;s current rate before transferring. Providers without a matching saved result are listed in the note below the table.</p>
           <CorridorBankDetails corridor={corridor} />
 
           <div className="history-block">

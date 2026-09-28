@@ -6,6 +6,7 @@ import { getProviderReview } from "@/lib/reviews";
 import { TopMoneyCompareRow } from "@/components/TopMoneyCompareRow";
 
 function compareQuotes(a: Quote, b: Quote) {
+  if ((a.status === "stale") !== (b.status === "stale")) return a.status === "stale" ? 1 : -1;
   if (a.eligibleForPriceRanking !== b.eligibleForPriceRanking) return a.eligibleForPriceRanking ? -1 : 1;
   if (a.provider === "Xe") return -1;
   if (b.provider === "Xe") return 1;
@@ -21,45 +22,24 @@ function ProviderName({ provider, slug }: { provider: string; slug?: string }) {
     : <strong>{provider}</strong>;
 }
 
-function UnavailableRow({ provider, mark, unavailable }: { provider: string; mark: string; unavailable?: string }) {
-  const bestRated = provider === "Xe";
-  return (
-    <article className={`quote-row quote-unavailable ${bestRated ? "quote-featured" : ""}`}>
-      <div className="provider-cell">
-        <div className={`provider-mark provider-${mark.toLowerCase()}`}>{mark}</div>
-        <div><ProviderName provider={provider} /><small>{unavailable ?? "No usable public quote in this sweep"}</small></div>
-        {bestRated && <b className="best-tag">Best Rated</b>}
-      </div>
-      <div className="rate-cell"><strong>Not available</strong><small>No rate to compare</small></div>
-      <div className="gets-cell"><strong>Not quoted</strong><small>Cannot take part in the price ranking</small></div>
-      <div className="proof-cell"><span className="proof-unavailable">No receipt</span><small>The public journey failed or was unsupported</small></div>
-    </article>
-  );
-}
-
-export function QuoteTable({ corridor, compact = false }: { corridor: Corridor; compact?: boolean }) {
+export function QuoteTable({ corridor, compact = false, resultsAvailable = true }: { corridor: Corridor; compact?: boolean; resultsAvailable?: boolean }) {
   const ordered = [...corridor.quotes].sort(compareQuotes);
-  const quotedProviders = new Set(ordered.map((quote) => quote.provider.toLowerCase()));
-  const unavailable = monitoredProviders.filter(({ provider }) => !quotedProviders.has(provider.toLowerCase()));
-  const xeUnavailable = unavailable.find(({ provider }) => provider === "Xe");
-  const remainingUnavailable = unavailable.filter(({ provider }) => provider !== "Xe");
+  const quotedProviders = new Set(ordered.map((quote) => quote.providerSlug || providerSlugFromName(quote.provider)));
+  const unavailable = monitoredProviders.filter(({ provider }) => !quotedProviders.has(providerSlugFromName(provider)));
+  const hasXe = quotedProviders.has("xe");
 
   return (
     <div className={`quote-table ${compact ? "compact" : ""}`}>
       <div className="quote-head">
         <span>Company</span><span>Rate and visible fee</span><span>What arrives</span><span>Our receipt</span>
       </div>
-      {xeUnavailable && (
-        <>
-          <UnavailableRow provider={xeUnavailable.provider} mark={xeUnavailable.mark} unavailable={"unavailable" in xeUnavailable ? xeUnavailable.unavailable : undefined} />
-          {!compact && <TopMoneyCompareRow corridor={corridor} />}
-        </>
-      )}
+      {!ordered.length && <p className="quote-no-results">{resultsAvailable ? "No saved results for this transfer yet." : "Saved results are temporarily unavailable. Please try again shortly."}</p>}
+      {!hasXe && !compact && <TopMoneyCompareRow corridor={corridor} />}
       {ordered.map((quote) => {
-        const bestRated = quote.provider === "Xe";
+        const bestRated = (quote.providerSlug || providerSlugFromName(quote.provider)) === "xe";
         return (
-          <Fragment key={quote.provider}>
-            <article className={`quote-row ${bestRated ? "quote-featured" : ""} ${quote.status !== "verified" ? "quote-muted" : ""}`}>
+          <Fragment key={quote.providerSlug || quote.provider}>
+            <article className={`quote-row ${bestRated ? "quote-featured" : ""} ${quote.status !== "verified" ? "quote-muted" : ""} ${quote.status === "stale" ? "quote-historical" : ""}`}>
               <div className="provider-cell">
                 <div className={`provider-mark provider-${quote.mark.toLowerCase()}`}>{quote.mark}</div>
                 <div>
@@ -78,9 +58,9 @@ export function QuoteTable({ corridor, compact = false }: { corridor: Corridor; 
                 {bestRated && <b className="best-tag">Best Rated</b>}
               </div>
               <div className="rate-cell"><strong>{quote.rate.toLocaleString("en-GB", { maximumFractionDigits: 5 })}</strong><small>Fee {money(quote.fee, quote.feeCurrency ?? corridor.fromCurrency)}</small></div>
-              <div className="gets-cell"><strong>{money(quote.recipientGets, corridor.toCurrency)}</strong><small>{quote.eligibleForPriceRanking ? "Comparable completed bank-transfer quote" : quote.promotion ? "Promotional quote, not ranked" : quote.status === "stale" ? "Due another standard-case check" : "Calculator evidence only"}</small></div>
+              <div className="gets-cell"><strong>{money(quote.recipientGets, corridor.toCurrency)}</strong><small>{quote.status === "stale" ? "Previous result · not a current quote" : quote.eligibleForPriceRanking ? "Comparable completed bank-transfer quote" : quote.promotion ? "Promotional quote, not ranked" : "Calculator evidence only"}</small></div>
               <div className="proof-cell">
-                <Link href={`/${corridor.slug}/receipts/${quote.proofId}`} className={quote.status === "stale" ? "disabled-proof" : "proof-link"}>{quote.status === "stale" ? "Pending" : "Open receipt"}</Link>
+                <Link href={`/${corridor.slug}/receipts/${quote.proofId}`} className="proof-link">Open receipt</Link>
                 <small>{quote.checkedAt}</small>
               </div>
               {quote.note && <p className="quote-note">{quote.note}</p>}
@@ -89,7 +69,13 @@ export function QuoteTable({ corridor, compact = false }: { corridor: Corridor; 
           </Fragment>
         );
       })}
-      {remainingUnavailable.map((entry) => <UnavailableRow provider={entry.provider} mark={entry.mark} unavailable={"unavailable" in entry ? entry.unavailable : undefined} key={entry.provider} />)}
+      {resultsAvailable && unavailable.length > 0 && (
+        <details className="quote-missing-note">
+          <summary>{unavailable.length} monitored providers have no saved result for this transfer</summary>
+          <p>{unavailable.map(({ provider }) => provider).join(", ")}.</p>
+          <p>They are omitted from the table until we have a usable result for the amount and currencies shown. This does not mean the provider cannot offer the transfer.</p>
+        </details>
+      )}
       <p className="table-commercial-note">A provider button may earn us money. The receipt link does not; it opens the evidence we stored independently.</p>
     </div>
   );

@@ -16,9 +16,10 @@
     "test:render-schema": "node --test tests/render-postgres.test.mjs",
     "test:bank-details": "node --import tsx --test tests/bank-validation.test.ts",
     "test:topmoneycompare": "node --import tsx --test tests/topmoneycompare.test.ts",
+    "test:quote-display": "node --experimental-strip-types --test tests/display-quotes.test.ts && node --test tests/quote-table.test.mjs",
     "indexnow": "node scripts/submit-indexnow.mjs",
     "indexnow:check": "INDEXNOW_DRY_RUN=1 node scripts/submit-indexnow.mjs",
-    "test": "npm run build && node --experimental-strip-types --test tests/comparison-case.test.ts tests/corridor-publication.test.ts && node --test tests/wordpress-plugin.test.mjs && node --experimental-loader ./scripts/cloudflare-node-loader.mjs --test tests/rendered-html.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test tests/comparison-case.test.ts tests/corridor-publication.test.ts tests/display-quotes.test.ts && node --test tests/wordpress-plugin.test.mjs tests/quote-table.test.mjs && node --experimental-loader ./scripts/cloudflare-node-loader.mjs --test tests/rendered-html.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern .sites-runtime --ignore-pattern .pw-browsers --ignore-pattern crawler/node_modules",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
