@@ -19,8 +19,8 @@ export async function generateMetadata(
   const { route } = await params;
   const corridor = getCorridor(route);
   if (!corridor) return {};
-  const title = `${corridor.fromCountry} to ${corridor.toCountry} Money Transfer Rates Today`;
-  const description = `Compare current ${corridor.fromCurrency} to ${corridor.toCurrency} transfer rates, fees, recipient amounts and dated provider receipts.`;
+  const title = `${corridor.fromCountry} to ${corridor.toCountry}: Compare Money Transfers`;
+  const description = `Compare ${corridor.fromCurrency} to ${corridor.toCurrency} transfer quotes, fees and dated receipts. Explore customer reviews and how this route compares with other destinations.`;
   const indexable = isPublishedCorridor(route);
   return pageMetadata({
     title,

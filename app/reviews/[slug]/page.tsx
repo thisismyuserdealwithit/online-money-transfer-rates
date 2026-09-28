@@ -3,6 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { CustomerReviewSection } from "@/components/CustomerReviewSection";
+import { ProviderComparison } from "@/components/ProviderComparison";
+import { getCustomerReviewEvidence, providerComparisonProfiles } from "@/lib/customer-reviews";
 import { getCorridor, money } from "@/lib/data";
 import { getProviderRateEvidence } from "@/lib/live-data";
 import { getProviderReview, providerCollectionLabel, providerReviews, reviewsUpdated } from "@/lib/reviews";
@@ -19,11 +22,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const review = getProviderReview(slug);
   if (!review) return {};
   return { ...pageMetadata({
-    title: `${review.name} Review: Exchange Rates and Fees`,
-    description: review.rating === null ? review.verdict : `${review.name} rate review using current corridor evidence, visible fees and the amount delivered. Compare the service directly with competing transfer providers.`,
+    title: `${review.name} Review: Customer Feedback, Rates and Fees`,
+    description: `Read ${review.name} customer-review research alongside transfer fees, live rate evidence and service limits. Compare it side by side with other providers.`,
     path: `/reviews/${review.slug}`,
     type: "article",
-    modifiedTime: review.reviewedAt ?? "2026-07-29",
+    modifiedTime: getCustomerReviewEvidence(slug)?.checkedAt ?? review.reviewedAt ?? "2026-07-29",
     authors: review.byline ? [review.byline] : ["Russell Gous", "Alon Rajic"],
     socialTitle: review.rating === null ? `${review.name} provider research` : `${review.name} rate review and live evidence`,
     socialDescription: review.verdict,
@@ -43,6 +46,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
   const review = getProviderReview(slug);
   if (!review) notFound();
 
+  const customerEvidence = getCustomerReviewEvidence(review.slug);
   const evidence = await getProviderRateEvidence(review.slug);
   const verified = evidence.filter((item) => item.eligibleForPriceRanking);
   const comparable = verified.filter((item) => item.bestVerifiedRecipient !== null && item.matchedCompetitors > 1);
@@ -90,7 +94,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
               <div>
                 <span className={`provider-mark provider-mark-large mark-${review.slug}`}>{review.mark}</span>
                 <span className="kicker">{review.category.toUpperCase()} · PRICE AND SERVICE REVIEW</span>
-                <h1>{review.name} rates: what you pay, and what you get for it</h1>
+                <h1>{review.name} review: rates, service and customer feedback</h1>
                 <p>{review.verdict}</p>
                 <div className="review-byline">{review.byline ? <span>Research by <Link href="/about">{review.byline}</Link></span> : <><span>Written by <Link href="/authors/russell-gous">Russell Gous</Link></span><span>Evidence reviewed by <Link href="/authors/alon-rajic">Alon Rajic</Link></span></>}<span>Updated {updatedLabel}</span></div>
               </div>
@@ -135,6 +139,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
               {review.analysis.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
             </section>
 
+            {customerEvidence && <CustomerReviewSection providerName={review.name} evidence={customerEvidence} />}
+
             <section className="review-pros-cons">
               <article><span>EARNS ITS PLACE</span><h2>Where it works well</h2><ul>{review.strengths.map((item) => <li key={item}>{item}</li>)}</ul></article>
               <article><span>READ THE SMALLER PRINT</span><h2>Where the value thins out</h2><ul>{review.weaknesses.map((item) => <li key={item}>{item}</li>)}</ul></article>
@@ -177,6 +183,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
               )}
             </section>
 
+            <ProviderComparison profiles={providerComparisonProfiles} initialLeft={review.slug} initialRight={related[0]?.slug} />
+
             <section className="review-comparisons">
               <span className="kicker">THE SHORTLIST</span>
               <h2>What to price beside {review.name}</h2>
@@ -206,6 +214,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
 
           <aside className="review-side-rail">
             <div><span className="kicker">PRICE THE ROUTE</span><p>Put {review.name} beside every company captured for the same sending amount.</p><Link href="/#corridors">Choose the transfer →</Link></div>
+            <div><span className="kicker">CUSTOMER FEEDBACK</span><p>Read what customers praise and question, then compare the service with another company.</p><a href="#customer-reviews">Read the customer evidence →</a></div>
             <div><span className="kicker">ABOUT THE RATING</span><p>{review.rating === null ? "No editorial score has been assigned. Read the source documents and check the provider’s quote for your transfer." : "The score covers the service. The price ranking starts again on every route."}</p><Link href="/reviews">Compare all company reviews →</Link></div>
           </aside>
         </div>

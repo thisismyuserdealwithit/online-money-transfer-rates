@@ -9,6 +9,8 @@ import { siteUrl } from "@/lib/seo";
 export const revalidate = 3600;
 
 const contentUpdated = new Date("2026-07-31T00:00:00.000Z");
+const comparisonUpdated = new Date("2026-09-29T00:00:00.000Z");
+const comparisonDate = (value?: string | null) => new Date(Math.max(comparisonUpdated.getTime(), value ? Date.parse(value) || 0 : 0));
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [dashboard, providerCoverage] = await Promise.all([
@@ -29,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const currentDataUpdated = latestCapture ? new Date(latestCapture) : contentUpdated;
 
   return [
-    { url: siteUrl, lastModified: currentDataUpdated, changeFrequency: "daily", priority: 1 },
+    { url: siteUrl, lastModified: comparisonDate(latestCapture), changeFrequency: "daily", priority: 1 },
     { url: `${siteUrl}/methodology`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.6 },
     { url: `${siteUrl}/coverage`, lastModified: currentDataUpdated, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/guides`, lastModified: contentUpdated, changeFrequency: "weekly", priority: 0.7 },
@@ -49,12 +51,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.75,
     })),
-    { url: `${siteUrl}/reviews`, lastModified: currentDataUpdated, changeFrequency: "daily", priority: 0.85 },
+    { url: `${siteUrl}/compare`, lastModified: comparisonUpdated, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${siteUrl}/reviews`, lastModified: comparisonDate(latestCapture), changeFrequency: "daily", priority: 0.85 },
     ...providerReviews.map((review) => ({
       url: `${siteUrl}/reviews/${review.slug}`,
-      lastModified: providerUpdated.get(review.slug)
-        ? new Date(providerUpdated.get(review.slug)!)
-        : review.reviewedAt ? new Date(review.reviewedAt) : contentUpdated,
+      lastModified: comparisonDate(providerUpdated.get(review.slug) ?? review.reviewedAt),
       changeFrequency: "daily" as const,
       priority: 0.85,
     })),
@@ -70,9 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/privacy`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.2 },
     ...publishedCorridorSlugs.map((slug) => ({
       url: `${siteUrl}/${slug}`,
-      lastModified: corridorUpdated.get(slug)
-        ? new Date(corridorUpdated.get(slug)!)
-        : contentUpdated,
+      lastModified: comparisonDate(corridorUpdated.get(slug)),
       changeFrequency: "daily" as const,
       priority: 0.85,
     })),

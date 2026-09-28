@@ -3,10 +3,11 @@ import Link from "next/link";
 import { QuoteTable } from "@/components/QuoteTable";
 import { AuthorPanel } from "@/components/AuthorPanel";
 import { CorridorBankDetails } from "@/components/CorridorBankDetails";
+import { CorridorContext } from "@/components/CorridorContext";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridors, getCorridor, money, monitoredProviders } from "@/lib/data";
-import { getDisplayQuotes, getQuoteHistory } from "@/lib/live-data";
+import { getDisplayQuotes, getQuoteHistory, getCorridorComparisonSnapshots } from "@/lib/live-data";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -37,7 +38,7 @@ export default async function CorridorAliasPage({ params }: { params: Promise<{ 
 export async function renderCorridorPage(slug: string) {
   const baseCorridor = getCorridor(slug);
   if (!baseCorridor) notFound();
-  const [displayResults, history] = await Promise.all([getDisplayQuotes(slug), getQuoteHistory(slug)]);
+  const [displayResults, history, comparison] = await Promise.all([getDisplayQuotes(slug), getQuoteHistory(slug), getCorridorComparisonSnapshots()]);
   const { quotes: displayQuotes, available: resultsAvailable } = displayResults;
   const corridor = { ...baseCorridor, quotes: displayQuotes };
   const todayQuotes = displayQuotes.filter((quote) => quote.status !== "stale");
@@ -55,7 +56,7 @@ export async function renderCorridorPage(slug: string) {
       description: comparableLiveQuotes.length
         ? `Like-for-like ${corridor.fromCurrency} to ${corridor.toCurrency} transfer evidence with provider fees, recipient amounts and timestamps.`
         : `A monitored ${corridor.fromCurrency} to ${corridor.toCurrency} transfer route showing provider availability and the evidence still needed for a like-for-like comparison.`,
-      url: canonical, inLanguage: "en-GB", ...(newestQuote?.capturedAt ? { dateModified: newestQuote.capturedAt } : {}),
+      url: canonical, inLanguage: "en-GB", dateModified: new Date(Math.max(Date.parse("2026-09-29"), Date.parse(newestQuote?.capturedAt ?? "2026-09-29"))).toISOString(),
       isPartOf: { "@type": "WebSite", name: "Online Money Transfer", url: "https://onlinemoneytransfer.co.uk/" },
     },
     {
@@ -96,6 +97,7 @@ export async function renderCorridorPage(slug: string) {
           <div className="section-heading table-title"><div><span className="kicker">PROVIDER RESULTS</span><h2>Latest available provider results</h2><p>Each provider shows its latest result from today, or its freshest saved result in grey. Previous results and calculator estimates stay outside today&apos;s price ranking.</p></div></div>
           <QuoteTable corridor={corridor} resultsAvailable={resultsAvailable} />
           <p className="data-caveat">Open a receipt to inspect the saved evidence and its UTC date. Grey results are historical reference points; recheck the provider&apos;s current rate before transferring. Providers without a matching saved result are listed in the note below the table.</p>
+          <CorridorContext corridor={corridor} snapshots={comparison.snapshots} available={comparison.available} />
           <CorridorBankDetails corridor={corridor} />
 
           <div className="history-block">

@@ -11,11 +11,11 @@ export function SiteHeader() {
         <nav aria-label="Main navigation">
           <Link href="/#corridors">Corridors</Link>
           <Link href="/coverage">Today&apos;s checks</Link>
+          <Link href="/compare">Compare companies</Link>
           <Link href="/reviews">Reviews</Link>
           <Link href="/research">Research</Link>
           <Link href="/guides">Guides</Link>
           <Link href="/swift-codes">Bank details</Link>
-          <Link href="/api">API</Link>
           <Link href="/about">About</Link>
           <span className="live-pill"><i /> Checked daily</span>
         </nav>

@@ -2,6 +2,7 @@ import { query, queryOne } from "@/lib/platform-runtime";
 import { getCorridor, type Quote } from "@/lib/data";
 import { COMPARISON_FRESHNESS_MS, isFreshComparableCase, isRankEligible } from "@/lib/comparison-case";
 import { loadDisplayQuoteRecords, selectDisplayQuotes } from "@/lib/display-quotes";
+import { buildCorridorSnapshots, type CorridorSnapshot } from "@/lib/corridor-comparison";
 
 type D1Row = {
   id: string;
@@ -183,6 +184,23 @@ export async function getDisplayQuotes(corridorSlug: string): Promise<DisplayQuo
     return { quotes: selectDisplayQuotes(corridor, rows, asQuote, now), available: true };
   } catch {
     return { quotes: [], available: false };
+  }
+}
+
+export async function getCorridorComparisonSnapshots(): Promise<{ snapshots: CorridorSnapshot[]; available: boolean }> {
+  const now = Date.now();
+  try {
+    // Include offset timestamps near UTC midnight; validate dates and cases in the selector.
+    const rows = await query<D1Row>(`
+      SELECT id, provider_slug, provider_name, quote_type, status, corridor_slug,
+        source_amount, source_currency, recipient_amount, recipient_currency,
+        fee_amount, fee_currency, exchange_rate, delivery_estimate, plan_name,
+        promotion, funding_method, payout_method, captured_at
+      FROM quotes WHERE status IN ('current', 'stale') AND captured_at >= ?
+    `, [new Date(now - 48 * 60 * 60 * 1000).toISOString().slice(0, 10)]);
+    return { snapshots: buildCorridorSnapshots(rows, now), available: true };
+  } catch {
+    return { snapshots: [], available: false };
   }
 }
 

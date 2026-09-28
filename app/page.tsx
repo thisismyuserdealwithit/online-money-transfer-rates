@@ -69,6 +69,15 @@ export default async function Home() {
           <p className="data-caveat">Each provider shows its freshest saved result. Previous results and indicative rates stay out of today&apos;s cheapest-rate claim. All check dates use UTC.</p>
         </section>
 
+        <section className="section shell comparison-home">
+          <div className="section-heading"><div><span className="kicker">PRICE AND SERVICE, SIDE BY SIDE</span><h2>Which transfer company fits the job?</h2><p>Compare fees, delivery, access to support and the customer feedback behind each company.</p></div><Link href="/compare">Build a company comparison →</Link></div>
+          <div className="steps-grid">
+            <article><b>40</b><h3>Companies with customer evidence</h3><p>Read positive themes and reported problems, with original sources. Wider bank and account reviews are labelled separately from transfer-only feedback.</p><Link href="/reviews">Browse the research →</Link></article>
+            <article><b>52</b><h3>Routes with comparative context</h3><p>Compare today’s coverage, the spread between observed offers and, where available, a dated historical cost benchmark.</p><Link href="/#corridors">Choose a route →</Link></article>
+            <article><b>2</b><h3>Companies in one comparison</h3><p>Put a bank beside a specialist or compare two apps. Focus on price, delivery or customer feedback to see their strengths and limitations.</p><Link href="/compare">Try the interactive comparison →</Link></article>
+          </div>
+        </section>
+
         <section className="how-section">
           <div className="shell">
             <div className="section-heading light"><div><span className="kicker">THE CHECKING DESK</span><h2>Enough detail to catch a flattering rate</h2></div><Link href="/methodology">Read how a quote qualifies →</Link></div>

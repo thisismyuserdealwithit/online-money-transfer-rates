@@ -9,8 +9,8 @@ import { pageMetadata } from "@/lib/seo";
 export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata({
-  title: "Money Transfer Company Rate Reviews and Live Comparisons",
-  description: "Compare Wise, Xe, Revolut, CurrencyFair, UK banks and other transfer services through current rate evidence, fees and dated provider receipts.",
+  title: "Money Transfer Company Reviews: Customer Feedback and Rates",
+  description: "Explore 40 money transfer company reviews with sourced customer feedback, service comparisons, fees and dated provider receipts.",
   path: "/reviews",
 });
 
@@ -33,9 +33,10 @@ export default async function ReviewsPage() {
         <section className="reviews-hero">
           <div className="shell reviews-hero-grid">
             <div>
-              <span className="kicker">COMPANY RATE REVIEWS</span>
+              <span className="kicker">RATES, SERVICE AND CUSTOMER REVIEWS</span>
               <h1>A pleasant app does not rescue an expensive exchange rate</h1>
-              <p>We begin with what the recipient gets, because that is where a “fee-free” claim either survives or falls apart. The review then covers delivery, service and the bits of the price a public calculator does not reveal.</p>
+              <p>Compare what the recipient gets, how each service works and what customers report. Each company page brings together published pricing terms, dated quote evidence and sourced customer-review research, with the limits of each source made clear.</p>
+              <p><Link href="/compare" style={{color:"inherit",textDecoration:"underline"}}>Choose two companies for a side-by-side comparison →</Link></p>
             </div>
             <aside>
               <span>REVIEW DIRECTORY</span>
