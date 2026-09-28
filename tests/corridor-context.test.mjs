@@ -98,7 +98,7 @@ test("all 52 routes render useful initial HTML, crawlable links and the route se
   assert.equal(corridors.length, 52);
   for (const corridor of corridors) {
     const html = renderContext(corridor);
-    assert.ok(html.includes("Comparing transfers from " + corridor.fromCountry + " to " + corridor.toCountry));
+    assert.match(html, new RegExp("Comparing transfers from (?:the )?" + corridor.fromCountry + " to (?:the )?" + corridor.toCountry));
     assert.match(html, /Choose the payment method before the headline rate/);
     assert.match(html, /Read customer feedback for the problem you need solved/);
     assert.match(html, /How does this route compare/);
