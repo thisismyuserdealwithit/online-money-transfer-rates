@@ -1,17 +1,57 @@
 import { execFileSync } from "node:child_process";
 import { bankEvidenceScreenshot } from "./bank-evidence.mjs";
-import { basicResult, numeric } from "./shared.mjs";
+import { basicResult } from "./shared.mjs";
 
 const supportedDestinationCurrencies = new Set(["AUD", "CAD", "CHF", "EUR", "HKD", "NZD", "PLN", "SGD", "USD", "ZAR"]);
 const localDeliveryCurrencies = new Set(["EUR", "PLN", "USD"]);
 
-function getJson(url) {
-  const text = execFileSync("curl", ["-sS", "--max-time", "45", "-A", "Mozilla/5.0", url], {
+function getResponse(url) {
+  return execFileSync("curl", ["-sS", "--max-time", "45", "-A", "Mozilla/5.0", "--write-out", "\n%{http_code}", url], {
     encoding: "utf8",
     maxBuffer: 4_000_000,
   });
-  if (!text.trim()) throw new Error("Starling returned an empty public rate response");
-  return JSON.parse(text);
+}
+
+// curl appends the original HTTP status after the response body. Do not replace
+// a rejected public API request with a synthetic successful browser response.
+export function parseStarlingHttpResponse(text, corridor) {
+  const separator = text.lastIndexOf("\n");
+  const statusText = text.slice(separator + 1).trim();
+  const status = Number(statusText);
+  if (separator < 0 || !/^\d{3}$/.test(statusText) || status < 100 || status > 599) {
+    throw new Error("Starling public rate response has no valid HTTP status");
+  }
+  const body = text.slice(0, separator).trim();
+  let response;
+  try {
+    response = JSON.parse(body);
+  } catch {
+    if (status < 200 || status >= 300) {
+      throw new Error(`Starling public rate endpoint returned HTTP ${status}`);
+    }
+    throw new Error(body ? "Starling returned an invalid JSON rate response" : "Starling returned an empty public rate response");
+  }
+  const errors = Array.isArray(response?.errors)
+    ? response.errors.map((error) => typeof error?.message === "string" ? error.message.slice(0, 120) : "").filter(Boolean).slice(0, 3)
+    : [];
+  const detail = errors.length ? `: ${errors.join("; ")}` : "";
+  if (status < 200 || status >= 300) {
+    throw new Error(`Starling public rate endpoint returned HTTP ${status}${detail}`);
+  }
+  if (response?.success === false || (Array.isArray(response?.errors) && response.errors.length > 0)) {
+    throw new Error(`Starling rejected the public rate request${detail}`);
+  }
+  const forward = response?.forward;
+  if (corridor.sourceCurrency !== "GBP" || forward?.sourceCurrency !== corridor.sourceCurrency || forward?.targetCurrency !== corridor.destinationCurrency) {
+    throw new Error("Starling returned the wrong currency pair");
+  }
+  const rawRate = forward.rate;
+  const exchangeRate = typeof rawRate === "number" ? rawRate
+    : typeof rawRate === "string" && /^\d+(?:\.\d+)?$/.test(rawRate.trim()) ? Number(rawRate) : NaN;
+  if (!Number.isFinite(exchangeRate) || exchangeRate <= 0) {
+    throw new Error("Starling returned an invalid exchange rate");
+  }
+  return { response, exchangeRate };
 }
 
 export const starling = {
@@ -26,11 +66,7 @@ export const starling = {
   },
   async capture(page, corridor, capturedAt) {
     const quoteUrl = `https://api.starlingbank.com/api/v2/fx/rates/?targetCurrency=${corridor.destinationCurrency}&sourceCurrency=GBP`;
-    const response = getJson(quoteUrl);
-    const exchangeRate = numeric(String(response?.forward?.rate));
-    if (response?.forward?.sourceCurrency !== "GBP" || response?.forward?.targetCurrency !== corridor.destinationCurrency) {
-      throw new Error("Starling returned the wrong currency pair");
-    }
+    const { response, exchangeRate } = parseStarlingHttpResponse(getResponse(quoteUrl), corridor);
     const conversionFee = Number((corridor.sourceAmount * 0.004).toFixed(2));
     const deliveryFee = localDeliveryCurrencies.has(corridor.destinationCurrency) ? 0.30 : 5.50;
     const feeAmount = Number((conversionFee + deliveryFee).toFixed(2));

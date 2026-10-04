@@ -100,7 +100,7 @@ async function captureQuote(provider, corridor) {
       return quote;
     } catch (error) {
       lastError = error;
-      if (error instanceof UnsupportedRouteError) break;
+      if (error instanceof UnsupportedRouteError || error?.pauseProvider === true) break;
     } finally {
       await page.close();
     }
@@ -108,7 +108,7 @@ async function captureQuote(provider, corridor) {
   const failure = cacheCaptureFailure(lastError);
   const failureMessage = failure.message;
   captureFailures.set(cacheKey, failure);
-  if (/curl:\s*\(28\)|ETIMEDOUT|ECONNREFUSED|Could not resolve host/i.test(failureMessage)) {
+  if (lastError?.pauseProvider === true || /curl:\s*\(28\)|ETIMEDOUT|ECONNREFUSED|Could not resolve host/i.test(failureMessage)) {
     providerTransportFailures.set(provider.slug, failureMessage);
   }
   throw lastError;

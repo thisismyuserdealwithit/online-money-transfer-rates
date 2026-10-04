@@ -3,6 +3,7 @@ import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import test from "node:test";
 import { getCorridor, type Quote } from "../lib/data.ts";
 import { isRankEligible } from "../lib/comparison-case.ts";
+import { buildCorridorSnapshots } from "../lib/corridor-comparison.ts";
 import { isUsableDisplayRecord, loadDisplayQuoteRecords, selectDisplayQuotes, type DisplayQuoteRecord } from "../lib/display-quotes.ts";
 
 const now = Date.parse("2026-09-28T12:00:00.000Z");
@@ -116,6 +117,55 @@ test("orders offset timestamps chronologically and keeps their original receipt 
   assert.equal(select([record({ captured_at: "2026-09-28T00:30:00+01:00" })])[0].status, "stale");
 });
 
+test("accepts one through nine fractional-second digits without rewriting receipt timestamps", () => {
+  for (let digits = 1; digits <= 9; digits += 1) {
+    const capturedAt = `2026-09-28T10:44:50.${"862909123".slice(0, digits)}Z`;
+    const row = record({ captured_at: capturedAt });
+    assert.equal(isUsableDisplayRecord(corridor, row, now), true, capturedAt);
+    const [quote] = select([row]);
+    assert.equal(quote.capturedAt, capturedAt);
+    assert.equal(quote.status, "verified");
+  }
+  const offset = "2026-09-28T12:44:50.862909+02:00";
+  assert.equal(select([record({ captured_at: offset })])[0].capturedAt, offset);
+});
+
+test("higher timestamp precision does not admit malformed dates, missing timezones or future captures", () => {
+  for (const captured_at of [
+    "2026-09-28T10:44:50.8629091234Z",
+    "2026-09-28T10:44:50.Z",
+    "2026-09-28T10:44:50.862909",
+    "2026-02-30T10:44:50.862909Z",
+    "2026-09-28T24:00:00.862909Z",
+    "2026-09-28T10:60:00.862909Z",
+    "2026-09-28T12:00:00.001001Z",
+  ]) {
+    assert.equal(isUsableDisplayRecord(corridor, record({ captured_at }), now), false, captured_at);
+  }
+});
+
+test("a newer microsecond receipt replaces an older millisecond result and preserves its evidence type", () => {
+  const capturedAt = "2026-09-28T10:44:50.862909Z";
+  const [quote] = select([
+    record({ id: "z-older-verified", captured_at: "2026-09-28T10:43:00.000Z" }),
+    record({ id: "a-latest-indicative", quote_type: "indicative", captured_at: capturedAt }),
+  ]);
+  assert.equal(quote.proofId, "a-latest-indicative");
+  assert.equal(quote.capturedAt, capturedAt);
+  assert.equal(quote.status, "indicative");
+  assert.equal(quote.eligibleForPriceRanking, false);
+
+  const historical = "2026-09-27T10:44:50.862909Z";
+  const [older] = select([
+    record({ id: "older-millis", captured_at: "2026-09-27T10:43:00.000Z" }),
+    record({ id: "latest-history", captured_at: historical }),
+  ]);
+  assert.equal(older.proofId, "latest-history");
+  assert.equal(older.capturedAt, historical);
+  assert.equal(older.status, "stale");
+  assert.equal(older.eligibleForPriceRanking, false);
+});
+
 test("a new promotional result remains selected without reviving an older ranked quote", () => {
   const [quote] = select([
     record({ id: "previous", captured_at: "2026-09-28T10:00:00.000Z" }),
@@ -166,4 +216,34 @@ test("the SQLite query walks past malformed newer records and merges noncanonica
   const rows = await loadDisplayQuoteRecords(stored.query, corridor, now);
   assert.deepEqual(rows.map((row) => row.id).sort(), ["canonical-good", "offset-good"]);
   assert.equal(select(rows)[0].proofId, "offset-good");
+});
+
+test("the SQLite history path returns a newer microsecond quote alongside the canonical candidate", async (t) => {
+  const timestamp = "2026-09-28T10:44:50.862909Z";
+  const stored = sqliteRecords([
+    record({ id: "older-canonical", captured_at: "2026-09-27T10:43:00.000Z" }),
+    record({ id: "latest-microseconds", captured_at: timestamp }),
+    record({ id: "other-provider", provider_slug: "xe", captured_at: "2026-09-28T10:30:00.123456789Z" }),
+  ]);
+  t.after(() => stored.db.close());
+  const quotes = select(await loadDisplayQuoteRecords(stored.query, corridor, now));
+  assert.equal(quotes.length, 2);
+  assert.equal(quotes.find((quote) => quote.providerSlug === "wise")?.proofId, "latest-microseconds");
+  assert.equal(quotes.find((quote) => quote.providerSlug === "wise")?.capturedAt, timestamp);
+  assert.equal(quotes.find((quote) => quote.providerSlug === "xe")?.proofId, "other-provider");
+});
+
+test("corridor snapshots count current high-precision evidence without ranking indicative or historical rows", () => {
+  const snapshot = buildCorridorSnapshots([
+    record({ id: "wise-old", captured_at: "2026-09-28T10:00:00.000Z" }),
+    record({ id: "wise-new", quote_type: "indicative", captured_at: "2026-09-28T10:44:50.862909Z" }),
+    record({ id: "xe-new", provider_slug: "xe", recipient_amount: 235, captured_at: "2026-09-28T11:00:00.123456789Z" }),
+    record({ id: "remitly-new", provider_slug: "remitly", quote_type: "indicative", captured_at: "2026-09-28T10:30:00.123456Z" }),
+    record({ id: "historic", provider_slug: "historical", captured_at: "2026-09-27T23:59:59.999999Z" }),
+  ], now).find((candidate) => candidate.slug === corridor.slug)!;
+  assert.equal(snapshot.currentProviders, 3);
+  assert.equal(snapshot.verifiedProviders, 1);
+  assert.equal(snapshot.bestRecipient, 235);
+  assert.equal(snapshot.recipientGap, null);
+  assert.equal(snapshot.latestCapturedAt, "2026-09-28T11:00:00.123Z");
 });

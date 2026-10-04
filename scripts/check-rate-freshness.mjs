@@ -3,9 +3,15 @@ import { pathToFileURL } from "node:url";
 
 const HOUR = 60 * 60 * 1000;
 
-// Recover before the site's 36-hour comparison window expires.
+// Match the comparison pages: a result must belong to the current UTC day.
 export function inspectCoverage(coverage, { now = Date.now(), maxAgeMs = 26 * HOUR, startedAfter } = {}) {
   const issues = [];
+  const today = new Date(now).toISOString().slice(0, 10);
+  const isCurrentCapture = (value) => {
+    const time = Date.parse(value);
+    return Number.isFinite(time) && time <= now && now - time <= maxAgeMs
+      && new Date(time).toISOString().slice(0, 10) === today;
+  };
   const expected = coverage?.expectedCorridors;
   const populated = coverage?.populatedCorridors;
   if (!Number.isInteger(expected) || expected < 1
@@ -15,9 +21,15 @@ export function inspectCoverage(coverage, { now = Date.now(), maxAgeMs = 26 * HO
   if (!Number.isInteger(coverage?.latestProviderRecords) || coverage.latestProviderRecords < expected) {
     issues.push("Fresh provider records are missing");
   }
-  const capturedAt = Date.parse(coverage?.newestCaptureAt);
-  if (!Number.isFinite(capturedAt) || now - capturedAt > maxAgeMs || capturedAt > now + 5 * 60 * 1000) {
-    issues.push("The latest receipt is missing or overdue");
+  if (!isCurrentCapture(coverage?.newestCaptureAt)) {
+    issues.push("The latest receipt is missing or was not captured today (UTC)");
+  }
+  const routes = Array.isArray(coverage?.corridors) ? coverage.corridors : [];
+  const currentRoutes = new Set(routes.filter((route) => typeof route.corridorSlug === "string"
+    && route.corridorSlug && Number(route.providerCount) > 0
+    && isCurrentCapture(route.latestCapturedAt)).map((route) => route.corridorSlug));
+  if (!Number.isInteger(expected) || currentRoutes.size < expected) {
+    issues.push(`Routes with a receipt today (UTC): ${currentRoutes.size}/${expected ?? "unknown"}`);
   }
   const runs = Array.isArray(coverage?.runs) ? coverage.runs : [];
   const completedRun = runs.find((run) => {
@@ -28,6 +40,7 @@ export function inspectCoverage(coverage, { now = Date.now(), maxAgeMs = 26 * HO
       && Number.isFinite(completedAt)
       && now - completedAt <= maxAgeMs
       && completedAt <= now + 5 * 60 * 1000
+      && new Date(completedAt).toISOString().slice(0, 10) === today
       && (!startedAfter || (runStartedAt >= Date.parse(startedAfter) && completedAt >= runStartedAt));
   });
   if (!completedRun) issues.push("No recent completed collection with stored results");
