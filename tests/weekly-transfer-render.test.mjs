@@ -20,7 +20,7 @@ function load(file) {
   const localRequire = (name) => {
     if (name === "@/lib/weekly-transfer-data") return { getWeeklyReport: async () => apiResult };
     if (name.endsWith(".module.css")) return new Proxy({}, { get: (_, key) => key === "__esModule" ? false : String(key) });
-    if (name === "next/link") return ({ children, href, ...props }) => React.createElement("a", { href, ...props }, children);
+    if (name === "next/link") return function TestLink({ children, href, ...props }) { return React.createElement("a", { href, ...props }, children); };
     if (["@/components/SiteHeader", "@/components/SiteFooter", "@/components/AuthorPanel"].includes(name)) return { [name.split("/").at(-1)]: () => null };
     if (name.startsWith("@/")) return load(resolve(root, name.slice(2)));
     if (name.startsWith(".")) return load(resolve(dirname(filename), name));
