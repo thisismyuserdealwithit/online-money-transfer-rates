@@ -34,6 +34,7 @@ export type PublicRate = {
   quoteType: "verified" | "indicative";
   status: "verified" | "indicative" | "stale";
   eligibleForPriceRanking: boolean;
+  priceRank: number | null;
   sourceAmount: number;
   sourceCurrency: string;
   recipientAmount: number;
@@ -54,6 +55,7 @@ export type PublicSnapshot = {
   id: string;
   kind: "current" | "crawl-run";
   capturedAt: string | null;
+  rankedRateCount: number;
   rates: PublicRate[];
 };
 
@@ -81,6 +83,7 @@ function toPublicRate(row: RateRow, corridor: Corridor): PublicRate {
       fundingMethod: row.funding_method, payoutMethod: row.payout_method,
       quoteType: row.quote_type, promotion, providerSlug: row.provider_slug,
     }),
+    priceRank: null,
     sourceAmount: Number(row.source_amount),
     sourceCurrency: row.source_currency,
     recipientAmount: Number(row.recipient_amount),
@@ -130,8 +133,14 @@ function snapshot(
   const rates = selected
     .map((row) => toPublicRate(row, corridor))
     .sort(compareRates);
+  // Presentation order is independent of price. Equal recipient amounts share
+  // a rank; only eligible offers for this transfer case participate.
+  const rankedRates = rates.filter((rate) => rate.eligibleForPriceRanking);
+  for (const rate of rankedRates) {
+    rate.priceRank = 1 + rankedRates.filter((other) => other.recipientAmount > rate.recipientAmount).length;
+  }
   const capturedAt = rates.map((rate) => rate.capturedAt).sort().at(-1) ?? null;
-  return { id, kind, capturedAt, rates };
+  return { id, kind, capturedAt, rankedRateCount: rankedRates.length, rates };
 }
 
 export async function getPublicRates(corridor: Corridor, limit: number) {
@@ -172,12 +181,14 @@ export async function getPublicRates(corridor: Corridor, limit: number) {
       .slice(0, historyLimit);
 
     return {
+      available: true,
       current: snapshot("current", "current", rows, corridor),
       history,
     };
   } catch {
     return {
-      current: { id: "current", kind: "current" as const, capturedAt: null, rates: [] },
+      available: false,
+      current: { id: "current", kind: "current" as const, capturedAt: null, rankedRateCount: 0, rates: [] },
       history: [] as PublicSnapshot[],
     };
   }

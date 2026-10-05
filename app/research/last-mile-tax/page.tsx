@@ -2,21 +2,25 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthorPanel } from "@/components/AuthorPanel";
+import { ResearchCitation } from "@/components/ResearchCitation";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import study from "@/lib/last-mile-data.json";
 import { pageMetadata } from "@/lib/seo";
+import { getResearchCitation, researchCitationUpdated } from "@/lib/research-citations";
+
+const citation = getResearchCitation("last-mile-tax");
 
 export const metadata: Metadata = pageMetadata({
-  title: "The Cost of Cash Remittances: £122.76 a Year on Monthly UK Transfers",
-  description: "A UK worker sending £200 each month pays £122.76 a year in average cash-transfer costs. See the matched cash penalties and what creates them.",
+  title: "Cash Transfer Costs: An Estimated £2.10 Premium in Q3 2025",
+  description: "Analysis of 791 World Bank UK service observations links cash payout to an estimated £2.10 higher cost per £200 in Q3 2025. Read the model, data and limits.",
   path: "/research/last-mile-tax",
   type: "article",
   publishedTime: "2026-07-22",
-  modifiedTime: "2026-07-29",
+  modifiedTime: researchCitationUpdated,
   authors: ["Alon Rajic", "Russell Gous"],
-  socialTitle: "The Last Mile Tax: Why Cash Collection Costs More",
-  socialDescription: "Our study of 791 UK remittance services puts the cash premium into pounds and working hours.",
+  socialTitle: "The Last Mile Tax: Cash Transfer Costs in Q3 2025",
+  socialDescription: "A historical study of 791 UK remittance services, with interpolated £200 estimates, matched offers and an adjusted model. These are not current quotes.",
 });
 
 const sources = {
@@ -89,10 +93,14 @@ export default function LastMileTaxPage() {
   const ldJson = {
     "@context": "https://schema.org",
     "@type": "Report",
+    "@id": citation.reportId,
+    mainEntityOfPage: { "@type": "WebPage", "@id": citation.canonicalUrl },
+    hasPart: { "@type": "Dataset", "@id": citation.datasetId },
+    citation: [citation.releaseUrl, ...citation.sources],
     name: "The Last Mile Tax 2026",
-    headline: "Cash collection adds an estimated £2.10 to a £200 UK remittance",
+    headline: "Cash payout was associated with an estimated £2.10 higher cost per £200 in Q3 2025",
     datePublished: "2026-07-22",
-    dateModified: "2026-07-22",
+    dateModified: researchCitationUpdated,
     author: [{ "@type": "Person", name: "Alon Rajic" }, { "@type": "Person", name: "Russell Gous" }],
     publisher: { "@type": "Organization", name: "Finofin Limited" },
     url: "https://onlinemoneytransfer.co.uk/research/last-mile-tax",
@@ -110,12 +118,13 @@ export default function LastMileTaxPage() {
               <div className="report-hero-grid">
                 <div>
                   <span className="report-edition">DATA EDITION · {study.edition.toUpperCase()}</span>
-                  <h1>Need the £200 in cash? The transfer costs about <em>{money(study.fixedEffectModel.cashPremiumGbp200)} more</em></h1>
-                  <p>Across 791 UK services, recipients without a usable account had fewer practical choices. Cash was usually the answer, and it came with a higher bill even after we allowed for harder routes.</p>
+                  <h1>Cash payout was associated with <em>{money(study.fixedEffectModel.cashPremiumGbp200)} more</em> per estimated £200 transfer</h1>
+                  <p>In the World Bank’s Q3 2025 UK sample, cash payout was associated with higher estimated costs after accounting for provider, destination and funding method. We paired 791 service observations with separate country-level access data; we did not observe individual customers.</p>
                   <div className="report-actions">
                     <Link href="/api/research/last-mile-tax/csv">Download the 33-country file</Link>
                     <a href="#salary-hit">Put the cost against UK pay</a>
                     <a href="#method">Check our calculation</a>
+                    <a href="#cite-this-study">Cite this study</a>
                   </div>
                 </div>
                 <aside className="report-definition last-mile-definition">
@@ -136,11 +145,11 @@ export default function LastMileTaxPage() {
 
           <section className="cash-conclusion-strip">
             <div className="shell">
-              <span className="kicker">HOW THE EXTRA COST APPEARS</span>
+              <span className="kicker">HOW THE ESTIMATE IS BUILT</span>
               <div className="cash-conclusion-flow">
-                <div><small>RECIPIENT HAS</small><strong>NO USABLE ACCOUNT</strong></div><b>→</b>
-                <div><small>SO THEY NEED</small><strong>CASH COLLECTION</strong></div><b>→</b>
-                <div><small>OUR BEST ESTIMATE</small><strong>+{money(study.fixedEffectModel.cashPremiumGbp200)}</strong></div>
+                <div><small>OBSERVED SERVICES</small><strong>CASH OR ACCOUNT PAYOUT</strong></div><b>→</b>
+                <div><small>MODEL ALLOWS FOR</small><strong>PROVIDER, ROUTE AND FUNDING</strong></div><b>→</b>
+                <div><small>ADJUSTED ASSOCIATION</small><strong>+{money(study.fixedEffectModel.cashPremiumGbp200)}</strong></div>
               </div>
               <p>The £2.10 is an estimated average after allowing for the company and destination, plus the way the sender pays. It is not a tariff added to every cash transfer.</p>
             </div>
@@ -266,7 +275,7 @@ export default function LastMileTaxPage() {
           </section>
 
           <section className="section shell report-section">
-            <div className="section-heading"><div><span className="kicker">THE TEN BIGGEST CASH PENALTIES</span><h2>What an extra cash charge looks like on a real £200 transfer</h2><p>These are the ten largest gaps among 17 like for like comparisons. In each one, the provider, destination, payment method, speed, date and network coverage are the same. Only the way the recipient gets the money changes.</p></div><Link href="/api/research/last-mile-tax/matched-offers/csv">Download all 17 comparisons →</Link></div>
+            <div className="section-heading"><div><span className="kicker">THE TEN BIGGEST CASH PENALTIES</span><h2>What an extra cash charge looks like on an estimated £200 transfer</h2><p>These are the ten largest gaps among 17 like for like comparisons. In each one, the provider, destination, payment method, speed, date and network coverage are the same. Only the way the recipient gets the money changes.</p></div><Link href="/api/research/last-mile-tax/matched-offers/csv">Download all 17 comparisons →</Link></div>
 
             <div className="top-ten-scoreboard">
               <div><strong>10</strong><span>largest matched penalties</span></div>
@@ -296,7 +305,7 @@ export default function LastMileTaxPage() {
                         <div><span>Into an account</span><strong>{money(accountCost)}</strong></div>
                         <i>versus</i>
                         <div className="cash-cost-comparison--cash"><span>Collected as cash</span><strong>{money(cashCost)}</strong></div>
-                        <p>Cash makes the same £200 transfer <strong>{money(row.premiumGbp200)} more expensive.</strong></p>
+                        <p>The estimated cash cost was <strong>{money(row.premiumGbp200)} higher</strong> than the matched account cost.</p>
                       </div>
                       <div className="cash-cost-drivers"><span><small>EXTRA CASH FEE</small><strong>+{money(row.feeDifferenceGbp)}</strong></span><span><small>EXCHANGE RATE EFFECT</small><strong>{fxCost >= 0 ? "+" : "−"}{money(Math.abs(fxCost))}</strong></span></div>
                       <div className="cash-country-context">
@@ -426,11 +435,11 @@ export default function LastMileTaxPage() {
                 <li><a href={sources.onsEarnings}>ONS Employee earnings in the UK, 2025</a></li>
               </ul>
             </div>
-            <div className="citation-box"><strong>Suggested citation</strong><p>Online Money Transfer, “The Last Mile Tax 2026: What cash collection costs families receiving money from Britain”, data edition, 22 July 2026, published by Finofin Limited.</p></div>
+            <ResearchCitation studyId="last-mile-tax" />
             <AuthorPanel label="RESEARCH TEAM" />
           </section>
         </article>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldJson) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldJson).replace(/</g, "\\u003c") }} />
       </main>
       <SiteFooter />
     </>

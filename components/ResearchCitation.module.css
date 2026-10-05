@@ -1,0 +1,33 @@
+.citation {
+  margin: 2rem 0;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  border: 1px solid #d4dfd9;
+  border-radius: 1rem;
+  background: #f5f8f6;
+  scroll-margin-top: 6rem;
+}
+.citation h2 { margin: .5rem 0 1rem; }
+.citation h3 { margin: 0 0 .65rem; font-size: 1.05rem; }
+.citation p { line-height: 1.65; }
+.citation a { color: #125443; text-decoration: underline; text-underline-offset: .2em; }
+.intro { max-width: 76ch; }
+.reference { margin: 1.5rem 0; padding: 1.25rem; background: #fff; border-left: 3px solid #287058; }
+.reference h3:not(:first-child) { margin-top: 1.4rem; }
+.canonical { overflow-wrap: anywhere; }
+.small { font-size: .875rem; color: #485c53; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 2rem; margin: 1.5rem 0; }
+.facts div { min-width: 0; }
+.facts dt { margin-bottom: .4rem; font-weight: 700; }
+.facts dd { margin: 0; line-height: 1.65; }
+.files { padding-top: 1.25rem; border-top: 1px solid #d4dfd9; }
+.files ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem 1.5rem; margin: 1rem 0; padding: 0; list-style: none; }
+.files li { display: flex; flex-direction: column; gap: .3rem; }
+.files li span { font-size: .85rem; color: #485c53; }
+.resources { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; margin: 1.5rem 0; line-height: 1.6; }
+.reuse { padding-top: 1.25rem; border-top: 1px solid #d4dfd9; }
+.reuse p:last-child { margin-bottom: 0; }
+@media (max-width: 640px) {
+  .facts, .files ul { grid-template-columns: 1fr; }
+  .reference { padding: 1rem; }
+  .resources { flex-direction: column; align-items: flex-start; }
+}

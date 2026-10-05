@@ -43,6 +43,8 @@ Canonical origin: ${siteUrl}
 - Indicative, stale, cash-payout, promotional and mismatched-amount evidence remains available as historical or contextual evidence but is not directly ranked.
 - When citing a rate, include the provider, corridor, sending amount, recipient amount, funding and payout methods, fee, fee currency and UTC timestamp.
 - Receipt pages expose these fields in crawlable HTML. A historical receipt is evidence of a past capture, not a current quote.
+- Website current comparisons use UTC-today evidence. The rates API uses its documented 36-hour window. generatedAt describes the response, while capturedAt dates the quote.
+- HTTP 503 with available:false means stored rates could not be loaded; a successful empty response is available:true. priceRank compares only eligible observed offers, ties share rank, and rankedRateCount gives the comparison size. Array position is not price rank.
 
 ## Corridor comparisons
 
@@ -52,7 +54,9 @@ ${corridorLinks}
 
 ${guideLinks}
 
-## Company reviews
+## Company reviews and customer evidence
+
+- [Compare two companies](${siteUrl}/compare): Price terms, delivery, access and dated customer evidence. Source review scores are separate from editorial ratings; whole-company, parent-company and transfer-service samples are not interchangeable.
 
 ${reviewLinks}
 
@@ -68,6 +72,14 @@ ${bankDetailLinks}
 - [Research desk](${siteUrl}/research)
 - [UK Remittance Cost Divide](${siteUrl}/research/uk-remittance-vulnerability-index)
 - [The Last Mile Tax](${siteUrl}/research/last-mile-tax)
+- [Weekly observed transfer costs](${siteUrl}/research/weekly-transfer-costs): Completed UTC weeks for five GBP 200 UK routes. Offer gaps use at least two comparable bank-to-bank quotes within one hour, not a mid-market benchmark.
+- [Cost Divide citation and immutable releases](${siteUrl}/research/uk-remittance-vulnerability-index#cite-this-study)
+- [Last Mile citation and immutable releases](${siteUrl}/research/last-mile-tax#cite-this-study)
+- [Cost Divide data](${siteUrl}/api/research/vulnerability-index)
+- [Last Mile data](${siteUrl}/api/research/last-mile-tax)
+- [Weekly report data](${siteUrl}/api/research/weekly-transfer-costs)
+
+The two World Bank price studies use Q3 2025 observations. Their official GBP 120 and GBP 300 source baskets must not be confused with Last Mile’s interpolated GBP 200 estimates or current provider quotes. Versioned research releases preserve their own snapshot date; underlying source rights remain in force.
 - [Methodology](${siteUrl}/methodology)
 - [Coverage ledger](${siteUrl}/coverage)
 - [Editorial policy](${siteUrl}/editorial-policy)

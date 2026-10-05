@@ -1,15 +1,21 @@
 {
   "aid": "onlinemoneytransfer.co.uk:api-index",
   "name": "Online Money Transfer Public APIs",
-  "description": "Free current and historical money transfer rate evidence from OnlineMoneyTransfer.co.uk.",
+  "description": "Dated transfer quotes, historical remittance research and weekly observed transfer costs.",
   "image": "https://onlinemoneytransfer.co.uk/favicon.svg",
   "url": "https://onlinemoneytransfer.co.uk/.well-known/apis.json",
   "type": "Index",
   "kind": "company",
   "created": "2026-07-27",
-  "modified": "2026-08-26",
+  "modified": "2026-10-06",
   "specificationVersion": "0.23",
-  "tags": ["money-transfer", "exchange-rates", "remittance", "finance", "open-data"],
+  "tags": [
+    "money-transfer",
+    "exchange-rates",
+    "remittance",
+    "finance",
+    "open-data"
+  ],
   "maintainers": [
     {
       "FN": "Finofin Limited",
@@ -35,7 +41,12 @@
       "humanURL": "https://onlinemoneytransfer.co.uk/api",
       "baseURL": "https://onlinemoneytransfer.co.uk/api/v1/rates",
       "version": "1.0",
-      "tags": ["money-transfer", "exchange-rates", "remittance", "historical-rates"],
+      "tags": [
+        "money-transfer",
+        "exchange-rates",
+        "remittance",
+        "historical-rates"
+      ],
       "properties": [
         {
           "type": "Documentation",
@@ -60,6 +71,95 @@
         {
           "type": "TermsOfService",
           "url": "https://onlinemoneytransfer.co.uk/api/terms"
+        }
+      ]
+    },
+    {
+      "aid": "onlinemoneytransfer.co.uk:remittance-cost-divide",
+      "name": "UK Remittance Cost Divide",
+      "description": "Separate World Bank RPW Q3 2025 official prices, annual macroeconomic context through 2024, provider comparisons and changing public quote evidence. Read the period attached to each series; historical service averages are not current offers.",
+      "humanURL": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index",
+      "baseURL": "https://onlinemoneytransfer.co.uk/api/research/vulnerability-index",
+      "version": "1.0",
+      "tags": [
+        "research",
+        "remittance",
+        "historical-data"
+      ],
+      "properties": [
+        {
+          "type": "Documentation",
+          "url": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index"
+        },
+        {
+          "type": "OpenAPI",
+          "url": "https://onlinemoneytransfer.co.uk/openapi.json"
+        },
+        {
+          "type": "PostmanCollection",
+          "url": "https://onlinemoneytransfer.co.uk/omt-rates.postman_collection.json"
+        },
+        {
+          "type": "Citation",
+          "url": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index#cite-this-study"
+        }
+      ]
+    },
+    {
+      "aid": "onlinemoneytransfer.co.uk:last-mile-tax",
+      "name": "The Last Mile Tax",
+      "description": "Analysis of 791 UK service observations across 33 destinations from World Bank RPW Q3 2025. GBP 200 costs are interpolated from the official GBP 120 and GBP 300 baskets, not quotes observed at GBP 200. Correlations are not causal estimates.",
+      "humanURL": "https://onlinemoneytransfer.co.uk/research/last-mile-tax",
+      "baseURL": "https://onlinemoneytransfer.co.uk/api/research/last-mile-tax",
+      "version": "1.0",
+      "tags": [
+        "research",
+        "remittance",
+        "historical-data"
+      ],
+      "properties": [
+        {
+          "type": "Documentation",
+          "url": "https://onlinemoneytransfer.co.uk/research/last-mile-tax"
+        },
+        {
+          "type": "OpenAPI",
+          "url": "https://onlinemoneytransfer.co.uk/openapi.json"
+        },
+        {
+          "type": "PostmanCollection",
+          "url": "https://onlinemoneytransfer.co.uk/omt-rates.postman_collection.json"
+        },
+        {
+          "type": "Citation",
+          "url": "https://onlinemoneytransfer.co.uk/research/last-mile-tax#cite-this-study"
+        }
+      ]
+    },
+    {
+      "aid": "onlinemoneytransfer.co.uk:weekly-transfer-costs",
+      "name": "Weekly observed transfer costs",
+      "description": "Historical weekly evidence for GBP 200 UK transfers to Spain, the United States, India, Pakistan and the Philippines. Uses each provider’s latest usable result per UTC day. Price gaps require at least two verified non-promotional bank-to-bank offers captured within one hour; they are observed offer differences, not costs against a mid-market rate.",
+      "humanURL": "https://onlinemoneytransfer.co.uk/research/weekly-transfer-costs",
+      "baseURL": "https://onlinemoneytransfer.co.uk/api/research/weekly-transfer-costs",
+      "version": "1.0",
+      "tags": [
+        "research",
+        "remittance",
+        "historical-data"
+      ],
+      "properties": [
+        {
+          "type": "Documentation",
+          "url": "https://onlinemoneytransfer.co.uk/research/weekly-transfer-costs"
+        },
+        {
+          "type": "OpenAPI",
+          "url": "https://onlinemoneytransfer.co.uk/openapi.json"
+        },
+        {
+          "type": "PostmanCollection",
+          "url": "https://onlinemoneytransfer.co.uk/omt-rates.postman_collection.json"
         }
       ]
     }

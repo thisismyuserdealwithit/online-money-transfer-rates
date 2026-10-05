@@ -93,13 +93,13 @@ export default async function Home() {
           <div className="shell research-home-grid">
             <div>
               <span className="kicker">ORIGINAL UK RESEARCH</span>
-              <h2>Cash collection costs about £2.10 more on a £200 transfer</h2>
-              <p>That is roughly the price of a supermarket loaf, added because the recipient needs notes in hand. Our study compares like-for-like delivery and sets 791 UK service records against financial access data for 33 destinations.</p>
-              <Link href="/research/last-mile-tax">Read the figures and the awkward bits →</Link>
+              <h2>Cash delivery carried a £2.10 adjusted difference in the historical data</h2>
+              <p>Our Q3 2025 World Bank study models a £200 transfer and separates the adjusted estimate from 17 tightly matched cash and account offers. It examines 791 UK service records alongside financial-access data for 33 destinations.</p>
+              <Link href="/research/last-mile-tax">Read the historical study and its method →</Link><p><Link href="/research/weekly-transfer-costs">Explore weekly provider evidence for five UK routes →</Link></p>
             </div>
             <div className="research-home-stats">
-              <span><b>£10.23</b> average cash service cost per £200</span>
-              <span><b>£4.79</b> average account delivery cost per £200</span>
+              <span><b>£10.23</b> modelled cash cost per £200 · Q3 2025</span>
+              <span><b>£4.79</b> modelled account cost per £200 · Q3 2025</span>
               <span><b>17</b> tightly matched cash and account offers</span>
               <span><b>33</b> destinations with access context</span>
             </div>

@@ -5,12 +5,14 @@ import { providerReviews } from "@/lib/reviews";
 import { publishedCorridorSlugs } from "@/lib/corridor-publication";
 import { getCoverageDashboard, getProviderCoverage } from "@/lib/live-data";
 import { siteUrl } from "@/lib/seo";
+import { publishedWeeks } from "@/lib/weekly-transfer-costs";
 
 export const revalidate = 3600;
 
 const contentUpdated = new Date("2026-07-31T00:00:00.000Z");
 const comparisonUpdated = new Date("2026-09-29T00:00:00.000Z");
-const comparisonDate = (value?: string | null) => new Date(Math.max(comparisonUpdated.getTime(), value ? Date.parse(value) || 0 : 0));
+const evidenceUpdated = new Date("2026-10-05T00:00:00.000Z");
+const evidenceDate = (value?: string | null) => new Date(Math.max(evidenceUpdated.getTime(), value ? Date.parse(value) || 0 : 0));
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [dashboard, providerCoverage] = await Promise.all([
@@ -31,11 +33,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const currentDataUpdated = latestCapture ? new Date(latestCapture) : contentUpdated;
 
   return [
-    { url: siteUrl, lastModified: comparisonDate(latestCapture), changeFrequency: "daily", priority: 1 },
+    { url: siteUrl, lastModified: evidenceDate(latestCapture), changeFrequency: "daily", priority: 1 },
     { url: `${siteUrl}/methodology`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.6 },
     { url: `${siteUrl}/coverage`, lastModified: currentDataUpdated, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/guides`, lastModified: contentUpdated, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${siteUrl}/api`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl}/api`, lastModified: evidenceUpdated, changeFrequency: "monthly", priority: 0.7 },
     { url: `${siteUrl}/api/terms`, lastModified: new Date("2026-08-26T00:00:00.000Z"), changeFrequency: "yearly", priority: 0.2 },
     { url: `${siteUrl}/swift-codes`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/bic-codes`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.75 },
@@ -52,16 +54,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.75,
     })),
     { url: `${siteUrl}/compare`, lastModified: comparisonUpdated, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/reviews`, lastModified: comparisonDate(latestCapture), changeFrequency: "daily", priority: 0.85 },
+    { url: `${siteUrl}/reviews`, lastModified: evidenceDate(latestCapture), changeFrequency: "daily", priority: 0.85 },
     ...providerReviews.map((review) => ({
       url: `${siteUrl}/reviews/${review.slug}`,
-      lastModified: comparisonDate(providerUpdated.get(review.slug) ?? review.reviewedAt),
+      lastModified: evidenceDate(providerUpdated.get(review.slug) ?? review.reviewedAt),
       changeFrequency: "daily" as const,
       priority: 0.85,
     })),
-    { url: `${siteUrl}/research`, lastModified: contentUpdated, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/research/uk-remittance-vulnerability-index`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${siteUrl}/research/last-mile-tax`, lastModified: contentUpdated, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${siteUrl}/research`, lastModified: evidenceUpdated, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${siteUrl}/research/weekly-transfer-costs`, changeFrequency: "weekly", priority: 0.9 },
+    ...publishedWeeks(Date.now(), 520).map((week) => ({ url: `${siteUrl}/research/weekly-transfer-costs/${week}`, changeFrequency: "monthly" as const, priority: 0.8 })),
+    { url: `${siteUrl}/research/uk-remittance-vulnerability-index`, lastModified: evidenceUpdated, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${siteUrl}/research/last-mile-tax`, lastModified: evidenceUpdated, changeFrequency: "monthly", priority: 0.9 },
     { url: `${siteUrl}/about`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.5 },
     { url: `${siteUrl}/authors/alon-rajic`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.4 },
     { url: `${siteUrl}/authors/russell-gous`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.4 },
@@ -71,7 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/privacy`, lastModified: contentUpdated, changeFrequency: "yearly", priority: 0.2 },
     ...publishedCorridorSlugs.map((slug) => ({
       url: `${siteUrl}/${slug}`,
-      lastModified: comparisonDate(corridorUpdated.get(slug)),
+      lastModified: evidenceDate(corridorUpdated.get(slug)),
       changeFrequency: "daily" as const,
       priority: 0.85,
     })),

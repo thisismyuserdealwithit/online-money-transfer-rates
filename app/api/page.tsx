@@ -117,6 +117,8 @@ export default function ApiPage() {
               <article><strong>history</strong><p>Exact comparison sweeps, ordered from newest to oldest.</p></article>
               <article><strong>receiptUrl</strong><p>The evidence page for one provider result on the relevant OMT corridor.</p></article>
               <article><strong>eligibleForPriceRanking</strong><p>True only for a fresh, verified and non-promotional bank transfer quote.</p></article>
+              <article><strong>available</strong><p>True means stored evidence loaded, even when no matching result exists. HTTP 503 with false means the data could not be loaded; do not report it as no provider coverage. CSV exposes the same distinction through <code>X-OMT-Data-Available</code>.</p></article>
+              <article><strong>priceRank and rankedRateCount</strong><p>Price rank compares recipient amounts among eligible offers in that snapshot. Ties share rank; unranked offers have null. The count shows how many offers qualify. Array order is presentation order, not a price ranking.</p></article>
             </div>
           </section>
 
@@ -143,6 +145,20 @@ export default function ApiPage() {
             </div>
           </section>
 
+          <section className="api-section" id="research-data">
+            <div className="section-heading"><div><span className="kicker">RESEARCH DATA</span><h2>Use the study with its observation period</h2><p>Historical service averages, estimated costs and current provider quotes answer different questions. Keep the source period and method beside each figure.</p></div></div>
+            <div className="api-fields">
+              <article><strong>UK Remittance Cost Divide</strong><p>World Bank Q3 2025 price observations, annual macroeconomic context and separately labelled public quote evidence.</p><p><Link href="/api/research/vulnerability-index">Open JSON</Link> · <Link href="/api/research/vulnerability-index/official-corridors/csv">Official corridor CSV</Link> · <Link href="/research/uk-remittance-vulnerability-index#cite-this-study">Citation, method and releases</Link></p></article>
+              <article><strong>The Last Mile Tax</strong><p>Historical cash-versus-account comparisons. Its £200 costs are interpolated estimates, not quotes observed at that amount.</p><p><Link href="/api/research/last-mile-tax">Open JSON</Link> · <Link href="/api/research/last-mile-tax/matched-offers/csv">Matched-offer CSV</Link> · <Link href="/research/last-mile-tax#cite-this-study">Citation, method and releases</Link></p></article>
+              <article><strong>Weekly observed transfer costs</strong><p>A completed UTC week for five £200 UK routes. Price gaps use at least two eligible offers captured within one hour; they are not mid-market cost estimates or current offers.</p><p><Link href="/api/research/weekly-transfer-costs">Latest completed week JSON</Link> · <Link href="/api/research/weekly-transfer-costs?format=csv">Observation CSV</Link> · <Link href="/research/weekly-transfer-costs">Dated editions and method</Link></p></article>
+            </div>
+            <p className="api-note">All research endpoints and CSV variants are listed in the <Link href="/openapi.json">OpenAPI definition</Link> and Postman collection. For weekly data, use <code>week=YYYY-MM-DD</code> with a published week-ending Sunday, or omit it for the latest completed UTC week. Source-specific rights remain in force; the rate-widget terms do not grant rights to republish every underlying dataset or provider screenshot.</p>
+          </section>
+
+          <section className="api-section" id="citing-evidence">
+            <div className="section-heading"><div><span className="kicker">CITING THE EVIDENCE</span><h2>Keep enough context to check the number</h2><p>A rate citation needs the provider, route, sending amount, recipient amount, fee and fee currency, funding and payout methods, UTC capture time and receipt link. The response’s <code>generatedAt</code> is not the quote’s <code>capturedAt</code>.</p></div></div>
+            <p>Use <code>priceRank</code> with <code>rankedRateCount</code> when comparing observed eligible offers. Equal recipient amounts share a rank. A rank of one from a single offer cannot establish a competitive or market-wide cheapest claim. For company feedback, the <Link href="/compare">comparison tool</Link> and <Link href="/reviews">reviews</Link> identify customer sources, sample scope and checked dates separately from editorial ratings.</p>
+          </section>
           <aside className="api-help">
             <div><span className="kicker">START WITH A REAL CORRIDOR</span><h2>See the data before you integrate it</h2><p>Open the UK to United States comparison to see the page, rate labels, historical records and receipts that sit behind the API response.</p></div>
             <Link href="/uk-to-united-states">Open UK to US rates →</Link>

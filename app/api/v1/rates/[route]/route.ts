@@ -15,12 +15,14 @@ const cors = {
   "Access-Control-Max-Age": "86400",
 };
 
-function json(body: unknown, status = 200) {
+function json(body: unknown, status = 200, available?: boolean) {
   return NextResponse.json(body, {
     status,
     headers: {
       ...cors,
-      "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=900",
+      "Cache-Control": available === false ? "no-store" : "public, max-age=60, s-maxage=300, stale-while-revalidate=900",
+      "Access-Control-Expose-Headers": "X-OMT-Data-Available",
+      ...(available === undefined ? {} : { "X-OMT-Data-Available": String(available) }),
     },
   });
 }
@@ -48,6 +50,8 @@ export async function GET(
 
   return json({
     apiVersion: OMT_API_VERSION,
+    available: rates.available,
+    ...(!rates.available ? { error: "data_unavailable" } : {}),
     generatedAt: new Date().toISOString(),
     corridor: {
       route,
@@ -72,8 +76,9 @@ export async function GET(
     },
     evidencePolicy: {
       receiptLinksOnly: true,
-      priceRanking: "Verified, non-promotional bank-transfer quotes only.",
+      priceRanking: "priceRank compares recipient amounts only among eligible verified, non-promotional bank-transfer to bank-deposit offers for this transfer case. Equal amounts share a rank. Array order is presentation order, not price rank.",
+      comparisonScope: "Ranks describe the observed eligible offers in each snapshot, not every offer in the market. Use rankedRateCount to see the size of that comparison.",
       freshness: "Quotes older than 36 hours are labelled stale.",
     },
-  });
+  }, rates.available ? 200 : 503, rates.available);
 }

@@ -186,9 +186,12 @@ test("renders the free API documentation and exposes the public feed", async () 
     bindings,
     context,
   );
-  assert.equal(apiResponse.status, 200);
+  assert.equal(apiResponse.status, 503);
   assert.equal(apiResponse.headers.get("access-control-allow-origin"), "*");
   const payload = await apiResponse.json();
+  assert.equal(payload.available, false);
+  assert.equal(payload.error, "data_unavailable");
+  assert.equal(apiResponse.headers.get("cache-control"), "no-store");
   assert.equal(payload.apiVersion, "1.0");
   assert.equal(payload.useTerms.price, "Free");
   assert.equal(payload.useTerms.attributionRequired, true);
@@ -204,7 +207,8 @@ test("renders the free API documentation and exposes the public feed", async () 
     bindings,
     context,
   );
-  assert.equal(csvResponse.status, 200);
+  assert.equal(csvResponse.status, 503);
+  assert.equal(csvResponse.headers.get("x-omt-data-available"), "false");
   assert.match(
     await csvResponse.text(),
     /^"snapshot_id","snapshot_kind","snapshot_time","provider","quote_type","status","eligible_for_ranking",/,

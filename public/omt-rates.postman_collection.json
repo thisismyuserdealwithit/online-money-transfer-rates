@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "36bb5fe4-319b-41e2-a2b2-589b1d0364f7",
-    "name": "Online Money Transfer Rates API",
-    "description": "Current and historical corridor evidence. Use is free when displayed rates include a visible link to the matching Online Money Transfer corridor and keep each rate's capturedAt and status visible.",
+    "name": "Online Money Transfer Rates and Research API",
+    "description": "Dated quotes and historical research. Keep capture dates, transfer cases, source periods, status and citation links. Check availability; array position is not price rank.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -17,6 +17,10 @@
     {
       "key": "history",
       "value": "14"
+    },
+    {
+      "key": "weekEnding",
+      "value": "2026-10-04"
     }
   ],
   "item": [
@@ -25,12 +29,21 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "Accept", "value": "application/json" }
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
         ],
         "url": {
           "raw": "{{baseUrl}}/api/v1/corridors",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "v1", "corridors"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "corridors"
+          ]
         }
       },
       "response": []
@@ -40,14 +53,27 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "Accept", "value": "application/json" }
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
         ],
         "url": {
           "raw": "{{baseUrl}}/api/v1/rates/{{route}}?history={{history}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "v1", "rates", "{{route}}"],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rates",
+            "{{route}}"
+          ],
           "query": [
-            { "key": "history", "value": "{{history}}" }
+            {
+              "key": "history",
+              "value": "{{history}}"
+            }
           ]
         },
         "description": "Returns the latest usable provider record and earlier stored comparison sweeps. Follow useTerms.requiredLink and keep each rate's capturedAt and status visible when publishing the figures."
@@ -59,14 +85,28 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "Accept", "value": "text/csv" }
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
         ],
         "url": {
           "raw": "{{baseUrl}}/api/v1/rates/{{route}}/csv?history={{history}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "v1", "rates", "{{route}}", "csv"],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rates",
+            "{{route}}",
+            "csv"
+          ],
           "query": [
-            { "key": "history", "value": "{{history}}" }
+            {
+              "key": "history",
+              "value": "{{history}}"
+            }
           ]
         }
       },
@@ -79,9 +119,293 @@
         "header": [],
         "url": {
           "raw": "{{baseUrl}}/openapi.json",
-          "host": ["{{baseUrl}}"],
-          "path": ["openapi.json"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "openapi.json"
+          ]
         }
+      },
+      "response": []
+    },
+    {
+      "name": "Get the UK Remittance Cost Divide data",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/vulnerability-index",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "vulnerability-index"
+          ]
+        },
+        "description": "Separate World Bank RPW Q3 2025 official prices, annual macroeconomic context through 2024, provider comparisons and changing public quote evidence. Read the period attached to each series; historical service averages are not current offers."
+      },
+      "response": []
+    },
+    {
+      "name": "Download the monitored UK corridor research panel",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/vulnerability-index/csv",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "vulnerability-index",
+            "csv"
+          ]
+        },
+        "description": "Monitored UK corridor panel combining dated macroeconomic context and public quote evidence. Distinct from the 33-corridor official price table; missing observations stay blank."
+      },
+      "response": []
+    },
+    {
+      "name": "Download official prices for 33 UK corridors",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/vulnerability-index/official-corridors/csv",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "vulnerability-index",
+            "official-corridors",
+            "csv"
+          ]
+        },
+        "description": "World Bank RPW Q3 2025 service averages for 33 UK outbound corridors. The UK source baskets are GBP 120 and GBP 300. Historical observed services, not current quotes or market-share-weighted customer costs."
+      },
+      "response": []
+    },
+    {
+      "name": "Download historical provider and corridor comparisons",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/vulnerability-index/provider-comparisons/csv",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "vulnerability-index",
+            "provider-comparisons",
+            "csv"
+          ]
+        },
+        "description": "Historical same-provider corridor service averages from World Bank RPW Q3 2025. Product mixes differ by corridor; total consumer cost is not provider profit or a universal provider ranking."
+      },
+      "response": []
+    },
+    {
+      "name": "Download the dated remittance research series",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/vulnerability-index/history/csv",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "vulnerability-index",
+            "history",
+            "csv"
+          ]
+        },
+        "description": "Separate quarterly price and annual macroeconomic series with dataset, geography, period, measure and unit fields. Do not combine periods or treat missing observations as zero."
+      },
+      "response": []
+    },
+    {
+      "name": "Get The Last Mile Tax research data",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/last-mile-tax",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "last-mile-tax"
+          ]
+        },
+        "description": "Analysis of 791 UK service observations across 33 destinations from World Bank RPW Q3 2025. GBP 200 costs are interpolated from the official GBP 120 and GBP 300 baskets, not quotes observed at GBP 200. Correlations are not causal estimates."
+      },
+      "response": []
+    },
+    {
+      "name": "Download the 33-destination access and cost panel",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/last-mile-tax/csv",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "last-mile-tax",
+            "csv"
+          ]
+        },
+        "description": "Historical UK remittance costs and country access indicators. GBP 200 costs are interpolated estimates. Indicator observation years differ and source-specific reuse terms apply; the live file is distinct from the versioned release."
+      },
+      "response": []
+    },
+    {
+      "name": "Download matched cash-versus-account offers",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/last-mile-tax/matched-offers/csv",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "last-mile-tax",
+            "matched-offers",
+            "csv"
+          ]
+        },
+        "description": "Seventeen historical matched cash-versus-account comparisons. Provider, destination, funding, access point, speed, date and receiving coverage are held constant. GBP 200 costs are interpolated estimates, not current offers."
+      },
+      "response": []
+    },
+    {
+      "name": "Get weekly transfer costs (JSON)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/weekly-transfer-costs?week={{weekEnding}}&format=json",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "weekly-transfer-costs"
+          ],
+          "query": [
+            {
+              "key": "week",
+              "value": "{{weekEnding}}"
+            },
+            {
+              "key": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "description": "Historical weekly evidence for GBP 200 UK transfers to Spain, the United States, India, Pakistan and the Philippines. Uses each provider’s latest usable result per UTC day. Price gaps require at least two verified non-promotional bank-to-bank offers captured within one hour; they are observed offer differences, not costs against a mid-market rate."
+      },
+      "response": []
+    },
+    {
+      "name": "Get weekly transfer costs (CSV)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/csv"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/research/weekly-transfer-costs?week={{weekEnding}}&format=csv",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "research",
+            "weekly-transfer-costs"
+          ],
+          "query": [
+            {
+              "key": "week",
+              "value": "{{weekEnding}}"
+            },
+            {
+              "key": "format",
+              "value": "csv"
+            }
+          ]
+        },
+        "description": "Historical weekly evidence for GBP 200 UK transfers to Spain, the United States, India, Pakistan and the Philippines. Uses each provider’s latest usable result per UTC day. Price gaps require at least two verified non-promotional bank-to-bank offers captured within one hour; they are observed offer differences, not costs against a mid-market rate."
       },
       "response": []
     }

@@ -19,11 +19,12 @@
     "test:quote-display": "node --experimental-strip-types --test tests/display-quotes.test.ts && node --test tests/quote-table.test.mjs",
     "indexnow": "node scripts/submit-indexnow.mjs",
     "indexnow:check": "INDEXNOW_DRY_RUN=1 node scripts/submit-indexnow.mjs",
-    "test": "npm run build && node --experimental-strip-types --test tests/comparison-case.test.ts tests/corridor-publication.test.ts tests/display-quotes.test.ts && node --test tests/wordpress-plugin.test.mjs tests/quote-table.test.mjs && node --experimental-loader ./scripts/cloudflare-node-loader.mjs --test tests/rendered-html.test.mjs && npm run test:comparison-content",
+    "test": "npm run build && node --experimental-strip-types --test tests/comparison-case.test.ts tests/corridor-publication.test.ts tests/display-quotes.test.ts && node --test tests/wordpress-plugin.test.mjs tests/quote-table.test.mjs && node --experimental-loader ./scripts/cloudflare-node-loader.mjs --test tests/rendered-html.test.mjs && npm run test:comparison-content && npm run test:evidence",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern .sites-runtime --ignore-pattern .pw-browsers --ignore-pattern crawler/node_modules",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
-    "test:comparison-content": "node --experimental-strip-types --test tests/corridor-comparison.test.ts && node --test tests/customer-reviews.test.mjs tests/provider-comparison.test.mjs tests/corridor-context.test.mjs"
+    "test:comparison-content": "node --experimental-strip-types --test tests/corridor-comparison.test.ts && node --test tests/customer-reviews.test.mjs tests/provider-comparison.test.mjs tests/corridor-context.test.mjs",
+    "test:evidence": "node --experimental-strip-types --test tests/weekly-transfer-costs.test.ts && node --test tests/weekly-transfer-render.test.mjs tests/provider-evidence-summary.test.mjs tests/public-api.test.mjs tests/api-discovery.test.mjs tests/research-citations.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1094.0",

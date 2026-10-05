@@ -5,10 +5,12 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CustomerReviewSection } from "@/components/CustomerReviewSection";
 import { ProviderComparison } from "@/components/ProviderComparison";
+import { ProviderEvidenceSummary } from "@/components/ProviderEvidenceSummary";
 import { getCustomerReviewEvidence, providerComparisonProfiles } from "@/lib/customer-reviews";
 import { getCorridor, money } from "@/lib/data";
 import { getProviderRateEvidence } from "@/lib/live-data";
-import { getProviderReview, providerCollectionLabel, providerReviews, reviewsUpdated } from "@/lib/reviews";
+import { getProviderReview, providerReviews } from "@/lib/reviews";
+import { getReviewMaterialUpdatedAt, reviewDateLabel } from "@/lib/provider-evidence-summary";
 import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -26,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description: `Read ${review.name} customer-review research alongside transfer fees, live rate evidence and service limits. Compare it side by side with other providers.`,
     path: `/reviews/${review.slug}`,
     type: "article",
-    modifiedTime: getCustomerReviewEvidence(slug)?.checkedAt ?? review.reviewedAt ?? "2026-07-29",
+    modifiedTime: getReviewMaterialUpdatedAt(review, getCustomerReviewEvidence(slug)),
     authors: review.byline ? [review.byline] : ["Russell Gous", "Alon Rajic"],
     socialTitle: review.rating === null ? `${review.name} provider research` : `${review.name} rate review and live evidence`,
     socialDescription: review.verdict,
@@ -48,22 +50,17 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
 
   const customerEvidence = getCustomerReviewEvidence(review.slug);
   const evidence = await getProviderRateEvidence(review.slug);
-  const verified = evidence.filter((item) => item.eligibleForPriceRanking);
-  const comparable = verified.filter((item) => item.bestVerifiedRecipient !== null && item.matchedCompetitors > 1);
-  const wins = comparable.filter((item) => item.bestVerifiedProvider === review.name).length;
-  const latest = evidence.reduce<string | null>((current, item) => !current || item.capturedAt > current ? item.capturedAt : current, null);
   const related = review.comparisonSlugs
     .map((comparisonSlug) => getProviderReview(comparisonSlug))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const updatedLabel = review.reviewedAt
-    ? new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(review.reviewedAt))
-    : reviewsUpdated;
+  const updatedAt = getReviewMaterialUpdatedAt(review, customerEvidence);
+  const updatedLabel = reviewDateLabel(updatedAt);
 
   const reviewSchema = {
     "@context": "https://schema.org",
     "@type": "Review",
     name: `${review.name} exchange rate and fee review`,
-    dateModified: review.reviewedAt ?? "2026-07-23",
+    dateModified: updatedAt,
     author: review.byline
       ? { "@type": "Organization", name: review.byline, url: "https://onlinemoneytransfer.co.uk/about" }
       : { "@type": "Person", name: "Russell Gous", url: "https://onlinemoneytransfer.co.uk/authors/russell-gous" },
@@ -96,7 +93,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
                 <span className="kicker">{review.category.toUpperCase()} · PRICE AND SERVICE REVIEW</span>
                 <h1>{review.name} review: rates, service and customer feedback</h1>
                 <p>{review.verdict}</p>
-                <div className="review-byline">{review.byline ? <span>Research by <Link href="/about">{review.byline}</Link></span> : <><span>Written by <Link href="/authors/russell-gous">Russell Gous</Link></span><span>Evidence reviewed by <Link href="/authors/alon-rajic">Alon Rajic</Link></span></>}<span>Updated {updatedLabel}</span></div>
+                <div className="review-byline">{review.byline ? <span>Research by <Link href="/about">{review.byline}</Link></span> : <><span>Written by <Link href="/authors/russell-gous">Russell Gous</Link></span><span>Evidence reviewed by <Link href="/authors/alon-rajic">Alon Rajic</Link></span></>}<span>Updated <time dateTime={updatedAt}>{updatedLabel}</time></span></div>
               </div>
               <aside className="review-rating-card">
                 <span>EDITORIAL RATING</span>
@@ -109,17 +106,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
 
         <div className="shell review-article-layout">
           <article className="review-main">
-            <section className="review-live-summary" aria-label="Live evidence summary">
-              <header><span className="kicker">OUR RATE RECORDS</span><h2>What {review.name} has shown on monitored routes</h2></header>
-              <div>
-                <article><strong>{evidence.length}</strong><span>routes with a fresh standard-case record</span></article>
-                <article><strong>{verified.length}</strong><span>completed transfer quotes</span></article>
-                <article><strong>{comparable.length ? `${wins}/${comparable.length}` : "N/A"}</strong><span>like-for-like price wins</span></article>
-                <article><strong>{latest ? capturedLabel(latest).replace(" UTC", "") : "Pending"}</strong><span>latest provider check</span></article>
-              </div>
-              <p>A win requires a completed, non-promotional quote at the same sending amount. Converter rates and modelled bank prices remain useful evidence, though neither is allowed to wear the winner&apos;s badge.</p>
-              {review.collectionMethod && <p><strong>{providerCollectionLabel(review, evidence.length > 0)}.</strong> {review.collectionMethod === "account-quote" ? "Published service terms are reviewed here; a customer-specific rate requires an account or a quote from the provider." : review.collectionStatus === "active" ? "Stored receipts below show which routes have returned usable evidence." : review.collectionStatus === "ready" ? "The public calculator passed capture tests. Scheduled collection has not been enabled; production receipts will appear after activation." : "A complete public calculator quote has not been captured. No rate is claimed until a usable receipt has been stored."}</p>}
-            </section>
+            <ProviderEvidenceSummary review={review} customer={customerEvidence} evidence={evidence} />
 
             <section className="review-fast-facts">
               <h2>Where {review.name} makes sense</h2>
@@ -146,9 +133,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
               <article><span>READ THE SMALLER PRINT</span><h2>Where the value thins out</h2><ul>{review.weaknesses.map((item) => <li key={item}>{item}</li>)}</ul></article>
             </section>
 
-            <section className="review-evidence">
+            <section className="review-evidence" id="provider-rate-evidence">
               <header>
-                <div><span className="kicker">CURRENT RATE EVIDENCE</span><h2>The latest {review.name} figures we can reproduce</h2><p>Each row is the newest record for that route. The receipt shows the provider screen or calculation behind it, including the time we saw it.</p></div>
+                <div><span className="kicker">RECENT RATE EVIDENCE</span><h2>The latest {review.name} figures we can reproduce</h2><p>Each row is the newest matching record returned within the rolling 36-hour window. The receipt shows the provider screen or calculation behind it, including the time we saw it. This window can include the previous UTC day.</p></div>
                 <Link href="/coverage">See the full checking ledger →</Link>
               </header>
               {evidence.length ? (
@@ -198,7 +185,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ slug: s
               </div>
             </section>
 
-            <section className="review-sources">
+            <section className="review-sources" id="provider-sources">
               <span className="kicker">WHAT WE CHECKED</span>
               <h2>{review.name}&apos;s own pricing documents</h2>
               <p>These pages describe the published terms. The corridor table is gathered separately, so a provider&apos;s explanation never substitutes for the quote it gives us.</p>

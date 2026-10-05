@@ -20,5 +20,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ rout
   ]));
   const header = ["snapshot_id", "snapshot_kind", "snapshot_time", "provider", "quote_type", "status", "eligible_for_ranking", "source_amount", "source_currency", "recipient_amount", "recipient_currency", "exchange_rate", "fee_amount", "fee_currency", "funding_method", "payout_method", "promotion", "captured_at", "receipt_url"];
   const body = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n") + "\n";
-  return new Response(body, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${route}-rates.csv"`, "Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=900" } });
+  return new Response(body, { status: data.available ? 200 : 503, headers: {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${route}-rates.csv"`,
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Expose-Headers": "X-OMT-Data-Available",
+    "X-OMT-Data-Available": String(data.available),
+    "Cache-Control": data.available ? "public, max-age=60, s-maxage=300, stale-while-revalidate=900" : "no-store",
+  } });
 }

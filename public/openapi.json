@@ -1,10 +1,10 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "Online Money Transfer Rates API",
+    "title": "Online Money Transfer Public Data API",
     "version": "1.0.0",
-    "summary": "Timestamped money transfer rate evidence",
-    "description": "Free JSON and CSV access to current and historical corridor comparisons. Published figures must carry a clearly visible link to the matching Online Money Transfer corridor and keep each rate's capture time and evidence status visible.",
+    "summary": "Dated transfer quote evidence and remittance research",
+    "description": "Free JSON and CSV access to dated corridor evidence and research. Published rate figures require a visible link to the matching OMT corridor and their capture time and evidence status. Research endpoints expose separately dated observations, estimates and methods; underlying source rights remain in force. Follow each study’s citation and rights links. Request generation time is not quote capture time.",
     "termsOfService": "https://onlinemoneytransfer.co.uk/api/terms",
     "contact": {
       "name": "Online Money Transfer",
@@ -35,13 +35,17 @@
         "operationId": "listCorridors",
         "summary": "List every supported corridor",
         "description": "Returns the valid route slugs, currency pairs, standard comparison amounts and canonical URLs.",
-        "tags": ["Rates"],
+        "tags": [
+          "Rates"
+        ],
         "responses": {
           "200": {
             "description": "Supported corridor catalogue",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CorridorList" }
+                "schema": {
+                  "$ref": "#/components/schemas/CorridorList"
+                }
               }
             }
           }
@@ -50,9 +54,13 @@
       "options": {
         "operationId": "optionsCorridors",
         "summary": "Inspect CORS support",
-        "tags": ["Rates"],
+        "tags": [
+          "Rates"
+        ],
         "responses": {
-          "204": { "description": "CORS preflight accepted" }
+          "204": {
+            "description": "CORS preflight accepted"
+          }
         }
       }
     },
@@ -65,8 +73,10 @@
       "get": {
         "operationId": "getCorridorRates",
         "summary": "Get corridor rates as JSON",
-        "description": "Returns the newest usable record per provider and up to 30 earlier comparison sweeps.",
-        "tags": ["Rates"],
+        "description": "Newest usable record per provider within the existing 36-hour API window and up to 30 stored sweeps. Website current-day tables use a different UTC-today rule. Use capturedAt, quoteType, eligibleForPriceRanking and priceRank; never infer cheapest from array position. An unavailable store returns HTTP 503 with available:false; an available empty result remains HTTP 200.",
+        "tags": [
+          "Rates"
+        ],
         "parameters": [
           {
             "$ref": "#/components/parameters/History"
@@ -78,26 +88,67 @@
             "headers": {
               "Access-Control-Allow-Origin": {
                 "description": "The public endpoint permits cross-origin reads.",
-                "schema": { "type": "string", "const": "*" }
+                "schema": {
+                  "type": "string",
+                  "const": "*"
+                }
+              },
+              "X-OMT-Data-Available": {
+                "description": "Whether stored evidence loaded. false accompanies HTTP 503; an available empty result is true.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
               }
             },
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/RatesResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/RatesResponse"
+                }
               }
             }
           },
           "404": {
             "$ref": "#/components/responses/UnknownCorridor"
+          },
+          "503": {
+            "description": "Stored evidence unavailable. Retains corridor, current, history and useTerms with available:false and error:data_unavailable. Not cached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatesResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-OMT-Data-Available": {
+                "description": "Whether stored evidence loaded. false accompanies HTTP 503; an available empty result is true.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            }
           }
         }
       },
       "options": {
         "operationId": "optionsCorridorRates",
         "summary": "Inspect CORS support",
-        "tags": ["Rates"],
+        "tags": [
+          "Rates"
+        ],
         "responses": {
-          "204": { "description": "CORS preflight accepted" }
+          "204": {
+            "description": "CORS preflight accepted"
+          }
         }
       }
     },
@@ -110,7 +161,9 @@
       "get": {
         "operationId": "downloadCorridorRatesCsv",
         "summary": "Download corridor rates as CSV",
-        "tags": ["Rates"],
+        "tags": [
+          "Rates"
+        ],
         "parameters": [
           {
             "$ref": "#/components/parameters/History"
@@ -121,12 +174,403 @@
             "description": "Current and historical rate evidence as CSV",
             "content": {
               "text/csv": {
-                "schema": { "type": "string" }
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "X-OMT-Data-Available": {
+                "description": "Whether stored evidence loaded. false accompanies HTTP 503; an available empty result is true.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
               }
             }
           },
           "404": {
             "$ref": "#/components/responses/UnknownCorridor"
+          },
+          "503": {
+            "description": "Stored evidence unavailable; CSV header only, X-OMT-Data-Available:false and Cache-Control:no-store.",
+            "headers": {
+              "X-OMT-Data-Available": {
+                "description": "Whether stored evidence loaded. false accompanies HTTP 503; an available empty result is true.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "description": "Existing CSV columns retain their order. HTTP 200 with X-OMT-Data-Available:true includes available empty results. Unavailable storage returns HTTP 503/false. Price ranks are available in JSON."
+      }
+    },
+    "/api/research/vulnerability-index": {
+      "get": {
+        "operationId": "getRemittanceCostDivide",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Get the UK Remittance Cost Divide data",
+        "description": "Separate World Bank RPW Q3 2025 official prices, annual macroeconomic context through 2024, provider comparisons and changing public quote evidence. Read the period attached to each series; historical service averages are not current offers. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "Study data, methods and source attribution.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/vulnerability-index/csv": {
+      "get": {
+        "operationId": "downloadRemittanceCorridorPanel",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Download the monitored UK corridor research panel",
+        "description": "Monitored UK corridor panel combining dated macroeconomic context and public quote evidence. Distinct from the 33-corridor official price table; missing observations stay blank. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "CSV with a header row; missing values remain missing.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/vulnerability-index/official-corridors/csv": {
+      "get": {
+        "operationId": "downloadOfficialRemittanceCorridors",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Download official prices for 33 UK corridors",
+        "description": "World Bank RPW Q3 2025 service averages for 33 UK outbound corridors. The UK source baskets are GBP 120 and GBP 300. Historical observed services, not current quotes or market-share-weighted customer costs. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "CSV with a header row; missing values remain missing.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/vulnerability-index/provider-comparisons/csv": {
+      "get": {
+        "operationId": "downloadRemittanceProviderComparisons",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Download historical provider and corridor comparisons",
+        "description": "Historical same-provider corridor service averages from World Bank RPW Q3 2025. Product mixes differ by corridor; total consumer cost is not provider profit or a universal provider ranking. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "CSV with a header row; missing values remain missing.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/vulnerability-index/history/csv": {
+      "get": {
+        "operationId": "downloadRemittanceResearchHistory",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Download the dated remittance research series",
+        "description": "Separate quarterly price and annual macroeconomic series with dataset, geography, period, measure and unit fields. Do not combine periods or treat missing observations as zero. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/uk-remittance-vulnerability-index#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "CSV with a header row; missing values remain missing.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/last-mile-tax": {
+      "get": {
+        "operationId": "getLastMileTax",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Get The Last Mile Tax research data",
+        "description": "Analysis of 791 UK service observations across 33 destinations from World Bank RPW Q3 2025. GBP 200 costs are interpolated from the official GBP 120 and GBP 300 baskets, not quotes observed at GBP 200. Correlations are not causal estimates. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/last-mile-tax#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "Study data, methods and source attribution.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/last-mile-tax/csv": {
+      "get": {
+        "operationId": "downloadLastMileCorridorPanel",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Download the 33-destination access and cost panel",
+        "description": "Historical UK remittance costs and country access indicators. GBP 200 costs are interpolated estimates. Indicator observation years differ and source-specific reuse terms apply; the live file is distinct from the versioned release. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/last-mile-tax#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "CSV with a header row; missing values remain missing.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/last-mile-tax/matched-offers/csv": {
+      "get": {
+        "operationId": "downloadLastMileMatchedOffers",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Download matched cash-versus-account offers",
+        "description": "Seventeen historical matched cash-versus-account comparisons. Provider, destination, funding, access point, speed, date and receiving coverage are held constant. GBP 200 costs are interpolated estimates, not current offers. Consult the study citation section for immutable releases, methods and source rights.",
+        "externalDocs": {
+          "description": "Study, citation and source rights",
+          "url": "https://onlinemoneytransfer.co.uk/research/last-mile-tax#cite-this-study"
+        },
+        "responses": {
+          "200": {
+            "description": "CSV with a header row; missing values remain missing.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/research/weekly-transfer-costs": {
+      "get": {
+        "operationId": "getWeeklyTransferCosts",
+        "tags": [
+          "Research"
+        ],
+        "summary": "Get a completed week of observed transfer costs",
+        "description": "Historical weekly evidence for GBP 200 UK transfers to Spain, the United States, India, Pakistan and the Philippines. Uses each provider’s latest usable result per UTC day. Price gaps require at least two verified non-promotional bank-to-bank offers captured within one hour; they are observed offer differences, not costs against a mid-market rate. The optional week is a Sunday; the first published week ends 2026-10-04. Omit it for the latest completed UTC week. This is historical evidence, not a current offer.",
+        "externalDocs": {
+          "description": "Weekly report and dated editions",
+          "url": "https://onlinemoneytransfer.co.uk/research/weekly-transfer-costs"
+        },
+        "parameters": [
+          {
+            "name": "week",
+            "in": "query",
+            "required": false,
+            "description": "Completed UTC week-ending Sunday. Future or unpublished editions return 404.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-04"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            },
+            "description": "JSON report or CSV observations for the same week."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical JSON report or CSV observation attachment. CSV columns: route,date,provider,source_amount,source_currency,recipient_amount,recipient_currency,fee,fee_currency,evidence_type,promotion,eligible_for_comparison,captured_at,receipt_url.",
+            "headers": {
+              "X-OMT-Data-Available": {
+                "description": "Whether stored evidence loaded. false accompanies HTTP 503; an available empty result is true.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyTransferReport"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid week or format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Future or unpublished week.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Stored evidence unavailable, not proof of an empty week. JSON error also returned when CSV was requested.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "available",
+                    "error",
+                    "period"
+                  ],
+                  "properties": {
+                    "available": {
+                      "const": false
+                    },
+                    "error": {
+                      "const": "data_unavailable"
+                    },
+                    "period": {
+                      "$ref": "#/components/schemas/WeeklyPeriod"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-OMT-Data-Available": {
+                "description": "Whether stored evidence loaded. false accompanies HTTP 503; an available empty result is true.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -163,7 +607,9 @@
         "description": "The corridor slug is not monitored.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
           }
         }
       }
@@ -171,124 +617,519 @@
     "schemas": {
       "Error": {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string", "example": "unknown_corridor" },
-          "message": { "type": "string" }
+          "error": {
+            "type": "string",
+            "example": "unknown_corridor"
+          },
+          "message": {
+            "type": "string"
+          }
         }
       },
       "Corridor": {
         "type": "object",
-        "required": ["route", "fromCountry", "fromCurrency", "toCountry", "toCurrency", "standardTestAmount", "url"],
+        "required": [
+          "route",
+          "fromCountry",
+          "fromCurrency",
+          "toCountry",
+          "toCurrency",
+          "standardTestAmount",
+          "url"
+        ],
         "properties": {
-          "route": { "type": "string" },
-          "fromCountry": { "type": "string" },
-          "fromCurrency": { "type": "string", "pattern": "^[A-Z]{3}$" },
-          "toCountry": { "type": "string" },
-          "toCurrency": { "type": "string", "pattern": "^[A-Z]{3}$" },
-          "standardTestAmount": { "type": "number" },
-          "url": { "type": "string", "format": "uri" }
+          "route": {
+            "type": "string"
+          },
+          "fromCountry": {
+            "type": "string"
+          },
+          "fromCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "toCountry": {
+            "type": "string"
+          },
+          "toCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "standardTestAmount": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
         }
       },
       "CorridorSummary": {
         "type": "object",
-        "required": ["route", "group", "fromCountry", "fromCode", "fromCurrency", "toCountry", "toCode", "toCurrency", "standardTestAmount", "url", "ratesUrl"],
+        "required": [
+          "route",
+          "group",
+          "fromCountry",
+          "fromCode",
+          "fromCurrency",
+          "toCountry",
+          "toCode",
+          "toCurrency",
+          "standardTestAmount",
+          "url",
+          "ratesUrl"
+        ],
         "properties": {
-          "route": { "type": "string" },
-          "group": { "type": "string", "enum": ["from-uk", "to-uk", "major"] },
-          "fromCountry": { "type": "string" },
-          "fromCode": { "type": "string", "pattern": "^[A-Z]{2}$" },
-          "fromCurrency": { "type": "string", "pattern": "^[A-Z]{3}$" },
-          "toCountry": { "type": "string" },
-          "toCode": { "type": "string", "pattern": "^[A-Z]{2}$" },
-          "toCurrency": { "type": "string", "pattern": "^[A-Z]{3}$" },
-          "standardTestAmount": { "type": "number" },
-          "url": { "type": "string", "format": "uri" },
-          "ratesUrl": { "type": "string", "format": "uri" }
+          "route": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "from-uk",
+              "to-uk",
+              "major"
+            ]
+          },
+          "fromCountry": {
+            "type": "string"
+          },
+          "fromCode": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "fromCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "toCountry": {
+            "type": "string"
+          },
+          "toCode": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "toCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "standardTestAmount": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "ratesUrl": {
+            "type": "string",
+            "format": "uri"
+          }
         }
       },
       "CorridorList": {
         "type": "object",
-        "required": ["apiVersion", "generatedAt", "count", "corridors"],
+        "required": [
+          "apiVersion",
+          "generatedAt",
+          "count",
+          "corridors"
+        ],
         "properties": {
-          "apiVersion": { "type": "string" },
-          "generatedAt": { "type": "string", "format": "date-time" },
-          "count": { "type": "integer", "minimum": 1 },
+          "apiVersion": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
           "corridors": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CorridorSummary" }
+            "items": {
+              "$ref": "#/components/schemas/CorridorSummary"
+            }
           }
         }
       },
       "Rate": {
         "type": "object",
-        "required": ["id", "provider", "providerSlug", "quoteType", "status", "eligibleForPriceRanking", "sourceAmount", "sourceCurrency", "recipientAmount", "recipientCurrency", "exchangeRate", "feeAmount", "feeCurrency", "fundingMethod", "payoutMethod", "promotion", "capturedAt", "receiptUrl"],
+        "required": [
+          "id",
+          "provider",
+          "providerSlug",
+          "quoteType",
+          "status",
+          "eligibleForPriceRanking",
+          "sourceAmount",
+          "sourceCurrency",
+          "recipientAmount",
+          "recipientCurrency",
+          "exchangeRate",
+          "feeAmount",
+          "feeCurrency",
+          "fundingMethod",
+          "payoutMethod",
+          "promotion",
+          "capturedAt",
+          "receiptUrl",
+          "priceRank"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "provider": { "type": "string" },
-          "providerSlug": { "type": "string" },
-          "quoteType": { "type": "string", "enum": ["verified", "indicative"] },
-          "status": { "type": "string", "enum": ["verified", "indicative", "stale"] },
-          "eligibleForPriceRanking": { "type": "boolean" },
-          "sourceAmount": { "type": "number" },
-          "sourceCurrency": { "type": "string" },
-          "recipientAmount": { "type": "number" },
-          "recipientCurrency": { "type": "string" },
-          "exchangeRate": { "type": "number" },
-          "feeAmount": { "type": "number" },
-          "feeCurrency": { "type": "string" },
-          "deliveryEstimate": { "type": ["string", "null"] },
-          "fundingMethod": { "type": "string" },
-          "payoutMethod": { "type": "string" },
-          "pricingBasis": { "type": ["string", "null"] },
-          "promotion": { "type": "boolean" },
-          "capturedAt": { "type": "string", "format": "date-time" },
-          "receiptUrl": { "type": "string", "format": "uri" }
+          "id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerSlug": {
+            "type": "string"
+          },
+          "quoteType": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "indicative"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "indicative",
+              "stale"
+            ]
+          },
+          "eligibleForPriceRanking": {
+            "type": "boolean"
+          },
+          "sourceAmount": {
+            "type": "number"
+          },
+          "sourceCurrency": {
+            "type": "string"
+          },
+          "recipientAmount": {
+            "type": "number"
+          },
+          "recipientCurrency": {
+            "type": "string"
+          },
+          "exchangeRate": {
+            "type": "number"
+          },
+          "feeAmount": {
+            "type": "number"
+          },
+          "feeCurrency": {
+            "type": "string"
+          },
+          "deliveryEstimate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fundingMethod": {
+            "type": "string"
+          },
+          "payoutMethod": {
+            "type": "string"
+          },
+          "pricingBasis": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "promotion": {
+            "type": "boolean"
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receiptUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "priceRank": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Rank by recipient amount among eligible offers for this transfer case in this snapshot. Equal amounts share a rank and leave gaps (1, 1, 3). Null for ineligible offers. Array order is presentation order, not price rank. Rank 1 alone is not a market-wide cheapest claim."
+          }
         }
       },
       "Snapshot": {
         "type": "object",
-        "required": ["id", "kind", "capturedAt", "rates"],
+        "required": [
+          "id",
+          "kind",
+          "capturedAt",
+          "rates",
+          "rankedRateCount"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "kind": { "type": "string", "enum": ["current", "crawl-run"] },
-          "capturedAt": { "type": ["string", "null"], "format": "date-time" },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "current",
+              "crawl-run"
+            ]
+          },
+          "capturedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
           "rates": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Rate" }
+            "items": {
+              "$ref": "#/components/schemas/Rate"
+            }
+          },
+          "rankedRateCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of eligible observed offers participating in this snapshot’s price ranks. A single eligible offer is not a competitive price comparison."
           }
         }
       },
       "UseTerms": {
         "type": "object",
-        "required": ["price", "attributionRequired", "requiredLink", "wording", "placement", "timestampRequired", "statusRequired", "context"],
+        "required": [
+          "price",
+          "attributionRequired",
+          "requiredLink",
+          "wording",
+          "placement",
+          "timestampRequired",
+          "statusRequired",
+          "context"
+        ],
         "properties": {
-          "price": { "type": "string", "const": "Free" },
-          "attributionRequired": { "type": "boolean", "const": true },
-          "requiredLink": { "type": "string", "format": "uri" },
-          "wording": { "type": "string" },
-          "placement": { "type": "string" },
-          "timestampRequired": { "type": "boolean", "const": true },
-          "statusRequired": { "type": "boolean", "const": true },
-          "context": { "type": "string" }
+          "price": {
+            "type": "string",
+            "const": "Free"
+          },
+          "attributionRequired": {
+            "type": "boolean",
+            "const": true
+          },
+          "requiredLink": {
+            "type": "string",
+            "format": "uri"
+          },
+          "wording": {
+            "type": "string"
+          },
+          "placement": {
+            "type": "string"
+          },
+          "timestampRequired": {
+            "type": "boolean",
+            "const": true
+          },
+          "statusRequired": {
+            "type": "boolean",
+            "const": true
+          },
+          "context": {
+            "type": "string"
+          }
         }
       },
       "RatesResponse": {
         "type": "object",
-        "required": ["apiVersion", "generatedAt", "corridor", "current", "history", "useTerms", "evidencePolicy"],
+        "required": [
+          "apiVersion",
+          "generatedAt",
+          "corridor",
+          "current",
+          "history",
+          "useTerms",
+          "evidencePolicy",
+          "available"
+        ],
         "properties": {
-          "apiVersion": { "type": "string", "example": "1.0" },
-          "generatedAt": { "type": "string", "format": "date-time" },
-          "corridor": { "$ref": "#/components/schemas/Corridor" },
-          "current": { "$ref": "#/components/schemas/Snapshot" },
+          "apiVersion": {
+            "type": "string",
+            "example": "1.0"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "corridor": {
+            "$ref": "#/components/schemas/Corridor"
+          },
+          "current": {
+            "$ref": "#/components/schemas/Snapshot"
+          },
           "history": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Snapshot" }
+            "items": {
+              "$ref": "#/components/schemas/Snapshot"
+            }
           },
-          "useTerms": { "$ref": "#/components/schemas/UseTerms" },
+          "useTerms": {
+            "$ref": "#/components/schemas/UseTerms"
+          },
           "evidencePolicy": {
             "type": "object",
-            "additionalProperties": { "type": ["string", "boolean"] }
+            "additionalProperties": {
+              "type": [
+                "string",
+                "boolean"
+              ]
+            }
+          },
+          "available": {
+            "type": "boolean",
+            "description": "True when stored evidence loaded, including a valid empty result. False accompanies HTTP 503 and does not establish that no provider or evidence exists."
+          },
+          "error": {
+            "type": "string",
+            "description": "data_unavailable when stored evidence could not be loaded."
+          }
+        }
+      },
+      "ResearchData": {
+        "type": "object",
+        "required": [
+          "title",
+          "methodology",
+          "sources"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "methodology": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Study-specific methods and limits."
+          },
+          "sources": {
+            "type": [
+              "object",
+              "array"
+            ],
+            "description": "Source links and credits. Underlying source terms apply; no blanket licence for all fields is implied."
+          }
+        },
+        "additionalProperties": true,
+        "description": "Separately dated historical observations, adapted estimates and changing quote evidence."
+      },
+      "WeeklyPeriod": {
+        "type": "object",
+        "required": [
+          "weekEnding",
+          "start",
+          "endExclusive"
+        ],
+        "properties": {
+          "weekEnding": {
+            "type": "string",
+            "format": "date",
+            "description": "Sunday ending the completed UTC week."
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endExclusive": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WeeklyTransferReport": {
+        "type": "object",
+        "required": [
+          "available",
+          "generatedAt",
+          "report"
+        ],
+        "properties": {
+          "available": {
+            "const": true
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "report": {
+            "type": "object",
+            "required": [
+              "schemaVersion",
+              "period",
+              "methodology",
+              "totals",
+              "corridors"
+            ],
+            "properties": {
+              "schemaVersion": {
+                "const": "1.0"
+              },
+              "period": {
+                "$ref": "#/components/schemas/WeeklyPeriod"
+              },
+              "methodology": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "totals": {
+                "type": "object",
+                "required": [
+                  "routes",
+                  "daysWithEvidence",
+                  "observations",
+                  "comparableRouteDays"
+                ],
+                "properties": {
+                  "routes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "daysWithEvidence": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "observations": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "comparableRouteDays": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "corridors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "description": "Five UK outbound routes. Recipient currencies stay separate; missing evidence is not estimated."
+              }
+            },
+            "additionalProperties": true
           }
         }
       }

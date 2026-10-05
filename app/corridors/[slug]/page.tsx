@@ -4,6 +4,7 @@ import { QuoteTable } from "@/components/QuoteTable";
 import { AuthorPanel } from "@/components/AuthorPanel";
 import { CorridorBankDetails } from "@/components/CorridorBankDetails";
 import { CorridorContext } from "@/components/CorridorContext";
+import { CorridorEvidenceSummary } from "@/components/CorridorEvidenceSummary";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { corridors, getCorridor, money, monitoredProviders } from "@/lib/data";
@@ -56,7 +57,7 @@ export async function renderCorridorPage(slug: string) {
       description: comparableLiveQuotes.length
         ? `Like-for-like ${corridor.fromCurrency} to ${corridor.toCurrency} transfer evidence with provider fees, recipient amounts and timestamps.`
         : `A monitored ${corridor.fromCurrency} to ${corridor.toCurrency} transfer route showing provider availability and the evidence still needed for a like-for-like comparison.`,
-      url: canonical, inLanguage: "en-GB", dateModified: new Date(Math.max(Date.parse("2026-09-29"), Date.parse(newestQuote?.capturedAt ?? "2026-09-29"))).toISOString(),
+      url: canonical, inLanguage: "en-GB", dateModified: new Date(Math.max(Date.parse("2026-10-05"), Date.parse(newestQuote?.capturedAt ?? "2026-10-05"))).toISOString(),
       isPartOf: { "@type": "WebSite", name: "Online Money Transfer", url: "https://onlinemoneytransfer.co.uk/" },
     },
     {
@@ -94,6 +95,7 @@ export async function renderCorridorPage(slug: string) {
             <div><span>Gap between completed quotes</span><strong>{verified.length > 1 ? money(verified[0].recipientGets - verified[verified.length - 1].recipientGets, corridor.toCurrency) : "Pending"}</strong><small>Measured on the same {money(sourceAmount, corridor.fromCurrency)} transfer</small></div>
             <div><span>Companies on our watchlist</span><strong>{monitoredProviders.length}</strong><small>{resultsAvailable ? `${todayQuotes.length} results today · ${historicalCount} previous results · ${verified.length} comparable today` : "Saved results are temporarily unavailable"}</small></div>
           </div>
+          <CorridorEvidenceSummary corridor={corridor} available={resultsAvailable} />
           <div className="section-heading table-title"><div><span className="kicker">PROVIDER RESULTS</span><h2>Latest available provider results</h2><p>Each provider shows its latest result from today, or its freshest saved result in grey. Previous results and calculator estimates stay outside today&apos;s price ranking.</p></div></div>
           <QuoteTable corridor={corridor} resultsAvailable={resultsAvailable} />
           <p className="data-caveat">Open a receipt to inspect the saved evidence and its UTC date. Grey results are historical reference points; recheck the provider&apos;s current rate before transferring. Providers without a matching saved result are listed in the note below the table.</p>
@@ -104,7 +106,7 @@ export async function renderCorridorPage(slug: string) {
             <div className="section-heading"><div><span className="kicker">HISTORY</span><h2>What providers quoted before today</h2><p>A fresh rate replaces the headline figure, not the record behind it.</p></div></div>
             {history.length ? (
               <div className="history-table">
-                <div className="history-head"><span>Checked</span><span>Provider and transfer case</span><span>Recipient received</span><span>Evidence</span></div>
+                <div className="history-head"><span>Checked</span><span>Provider and transfer case</span><span>Quoted recipient amount</span><span>Evidence</span></div>
                 {history.slice(0, 24).map((item) => (
                   <div className="history-row" key={item.id}>
                     <span>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(item.capturedAt))} UTC</span>
