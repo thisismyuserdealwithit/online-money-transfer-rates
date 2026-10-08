@@ -83,7 +83,7 @@ export default async function CoveragePage() {
           </section>
 
           <div className="run-ledger">
-            <div className="section-heading"><div><span className="kicker">CHECKING HISTORY</span><h2>How the latest sweeps behaved</h2><p>A partial sweep stored at least one result, but another company blocked the journey or failed to produce a complete public quote.</p></div></div>
+            <div className="section-heading"><div><span className="kicker">CHECKING HISTORY</span><h2>How the latest sweeps behaved</h2><p>A partial sweep kept the results it collected but ended early or encountered a provider error.</p></div></div>
             {dashboard.runs.length ? dashboard.runs.map((run) => (
               <article key={run.id}>
                 <span className={`run-state state-${run.status}`}>{run.status}</span>
