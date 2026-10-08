@@ -10,6 +10,15 @@ on:
       - .github/workflows/daily-rates.yml
       - scripts/check-rate-freshness.mjs
   workflow_dispatch:
+    inputs:
+      interrupted_run_id:
+        description: "Optional: collection ID to reconcile after confirmed workflow cancellation"
+        required: false
+        type: string
+      cancelled_workflow_run_id:
+        description: "Required with interrupted_run_id: the cancelled GitHub workflow run ID"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -19,7 +28,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  reconcile-interrupted:
+    if: github.event_name == 'workflow_dispatch' && (inputs.interrupted_run_id || inputs.cancelled_workflow_run_id)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test interrupted-run reconciliation
+        run: node --test tests/finalize-interrupted-run.test.mjs
+      - name: Record the confirmed interruption
+        run: node scripts/finalize-interrupted-run.mjs
+        env:
+          CRAWL_RUN_ID: ${{ inputs.interrupted_run_id }}
+          CANCELLED_WORKFLOW_RUN_ID: ${{ inputs.cancelled_workflow_run_id }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          INGEST_ENDPOINT: https://online-money-transfer-rates-1.onrender.com/api/ingest
   crawl:
+    if: github.event_name != 'workflow_dispatch' || (!inputs.interrupted_run_id && !inputs.cancelled_workflow_run_id)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:

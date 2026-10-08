@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import {
   batch,
   execute,
@@ -10,7 +11,7 @@ import { getCorridor } from "@/lib/data";
 import { matchesConfiguredTransferCase } from "@/lib/comparison-case";
 
 type IngestPayload = {
-  kind?: "quote" | "quote-batch" | "run-summary";
+  kind?: "quote" | "quote-batch" | "run-summary" | "run-interruption";
   id?: string; crawlRunId?: string; corridorSlug?: string; sourceCountry?: string;
   destinationCountry?: string; providerSlug?: string; providerName?: string;
   providerHomepage?: string; quoteType?: "verified" | "indicative";
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as IngestPayload;
-    if (body.kind === "run-summary") {
+    if (body.kind === "run-summary" || body.kind === "run-interruption") {
       const crawlRunId = requiredString(body.crawlRunId, "crawlRunId", 100);
       const startedAt = requiredString(body.startedAt, "startedAt", 40);
       const completedAt = requiredString(body.completedAt, "completedAt", 40);
@@ -126,6 +127,19 @@ export async function POST(request: Request) {
       const attempted = Math.floor(amount(body.attempted, "attempted"));
       const succeeded = Math.floor(amount(body.succeeded, "succeeded"));
       const failed = Math.floor(amount(body.failed, "failed"));
+      if (body.kind === "run-interruption") {
+        if (Date.parse(completedAt) < Date.parse(startedAt)) throw new Error("Run completion precedes its start");
+        const errorSummary = requiredString(body.errorSummary, "errorSummary", 12_000);
+        // Repair only the exact unfinished snapshot that the caller checked.
+        // A late receipt or another finalizer must leave this request harmless.
+        const updated = await queryOne<{ id: string }>(
+          "UPDATE crawl_runs SET completed_at = ?, status = 'partial', error_summary = ? WHERE id = ? AND status = 'running' AND completed_at IS NULL AND started_at = ? AND attempted = ? AND succeeded = ? AND failed = ? RETURNING id",
+          [completedAt, errorSummary, crawlRunId, startedAt, attempted, succeeded, failed],
+        );
+        if (!updated) return Response.json({ error: "Run is missing, already finalized, or changed since it was checked" }, { status: 409 });
+        revalidatePath("/coverage");
+        return Response.json({ crawlRunId, status: "partial", stored: true, interrupted: true }, { status: 201 });
+      }
       const status = succeeded === 0 ? "failed" : failed > 0 ? "partial" : "completed";
       const errorSummary = typeof body.errorSummary === "string" ? body.errorSummary.slice(0, 12_000) : null;
       await execute(`
