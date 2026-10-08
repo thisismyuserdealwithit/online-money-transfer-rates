@@ -26,12 +26,14 @@ export function ProviderEvidenceSummary({ review, customer, evidence }: {
     <h2 id="provider-evidence-summary-title">What this evidence shows</h2>
     <p>{summary.finding}</p>
     <dl className={styles.metrics}>
-      <div><dt>Route records in the past {providerEvidenceWindowHours} hours</dt><dd>{summary.routeCount || "Not available"}</dd></div>
-      <div><dt>Comparable bank-transfer quotes</dt><dd>{summary.routeCount ? summary.quoteCount : "Not available"}</dd></div>
+      <div><dt>Collected route records in the past {providerEvidenceWindowHours} hours</dt><dd>{summary.routeCount || "Not available"}</dd></div>
+      <div><dt>Indicative estimates</dt><dd>{summary.routeCount ? summary.indicativeCount : "Not available"}</dd></div>
+      <div><dt>Quotes eligible for price ranking</dt><dd>{summary.routeCount ? summary.quoteCount : "Not available"}</dd></div>
+      {summary.otherUnrankedCount > 0 && <div><dt>Other records not ranked</dt><dd>{summary.otherUnrankedCount}</dd></div>}
       <div><dt>Price wins where a rival was captured</dt><dd>{summary.comparableCount ? `${summary.wins}/${summary.comparableCount}` : "Not assessed"}</dd></div>
       <div><dt>Latest included capture</dt><dd className={styles.timestamp}>{summary.latest ? <time dateTime={summary.latest}>{latestLabel} UTC</time> : "Not available"}</dd></div>
     </dl>
-    <p className={styles.note}>These counts use a rolling {providerEvidenceWindowHours}-hour window; route tables use today’s UTC records. Modelled prices, converter rates and introductory offers cannot win this standard comparison. A captured quote is not a guarantee of the price available when you send. <a href="#provider-rate-evidence">Inspect the dated receipts</a>.</p>
+    <p className={styles.note}>These counts use a rolling {providerEvidenceWindowHours}-hour window. Route tables rank today’s UTC records and retain older results in grey. Modelled prices, converter rates and introductory offers cannot win this standard comparison. A captured quote is not a guarantee of the price available when you send. <a href="#provider-rate-evidence">Inspect the dated receipts</a>.</p>
     <div className={styles.context}>
       <div><h3>Published pricing model</h3><p>{review.rateModel}</p><p className={styles.note}>Service assessment dated <time dateTime={serviceDate}>{reviewDateLabel(serviceDate)}</time>.</p><a href="#provider-sources">Read the provider’s source documents</a></div>
       <div><h3>Customer evidence</h3>{customer ? <>

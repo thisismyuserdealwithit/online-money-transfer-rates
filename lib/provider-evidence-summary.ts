@@ -40,14 +40,27 @@ export function summariseProviderRateEvidence(providerName: string, evidence: re
   }, null);
   const routeCount = evidence.length;
   const quoteCount = verified.length;
+  const indicativeCount = evidence.filter((item) => !item.eligibleForPriceRanking && item.quoteType === "indicative").length;
+  const otherUnrankedCount = routeCount - quoteCount - indicativeCount;
+  const promotionCount = evidence.filter((item) => item.promotion).length;
+  const breakdown = new Intl.ListFormat("en-GB", { style: "long", type: "conjunction" }).format([
+    indicativeCount ? `${indicativeCount} indicative ${indicativeCount === 1 ? "estimate" : "estimates"}` : "",
+    quoteCount ? `${quoteCount} eligible bank-transfer ${quoteCount === 1 ? "quote" : "quotes"}` : "",
+    otherUnrankedCount ? `${otherUnrankedCount} other unranked ${otherUnrankedCount === 1 ? "record" : "records"}` : "",
+  ].filter(Boolean));
+  const collectionFinding = `We have collected ${routeCount} recent route ${routeCount === 1 ? "record" : "records"} for ${providerName}: ${breakdown}.`;
+  const promotionNote = promotionCount ? ` ${promotionCount} of these records ${promotionCount === 1 ? "is" : "are"} promotional.` : "";
   const finding = !routeCount
     ? `No recent price evidence is available for ${providerName} in this review. This does not establish that the provider cannot offer your transfer; request a quote for your amount and payment method.`
-    : !quoteCount
-      ? `The ${routeCount} recent route ${routeCount === 1 ? "record for" : "records for"} ${providerName} ${routeCount === 1 ? "does" : "do"} not include a completed, non-promotional bank-to-bank quote. These records cannot establish a like-for-like price winner.`
-      : `${providerName} has recent records on ${routeCount} monitored ${routeCount === 1 ? "route" : "routes"}; ${quoteCount} ${quoteCount === 1 ? "qualifies" : "qualify"} for a standard bank-to-bank price comparison. Each result applies to its recorded amount, currencies and payment methods, rather than the provider's entire service.`;
+    : collectionFinding + promotionNote + (!quoteCount
+      ? " These records are available to inspect, but none qualifies for the standard bank-transfer price ranking."
+      : " Each result applies to its recorded amount, currencies and payment methods, rather than the provider's entire service.");
   return {
     routeCount,
     quoteCount,
+    indicativeCount,
+    otherUnrankedCount,
+    promotionCount,
     comparableCount: comparable.length,
     wins: comparable.filter((item) => item.bestVerifiedProvider === providerName).length,
     latest,

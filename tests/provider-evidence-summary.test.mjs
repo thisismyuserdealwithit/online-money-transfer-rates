@@ -98,18 +98,54 @@ test("latest capture uses the timestamp rather than lexicographic order", () => 
   assert.equal(result.latest, "2026-10-05T21:45:00Z");
 });
 
-test("indicative and promotional records cannot become completed quotes in the summary", () => {
-  const html = renderSummary({ evidence: [
-    quote({ quoteType: "indicative", eligibleForPriceRanking: false }),
-    quote({ promotion: true, eligibleForPriceRanking: false }),
-  ] });
-  assert.match(html, /2 recent route records/);
-  assert.match(html, /do not include a completed, non-promotional bank-to-bank quote/);
-  assert.match(html, /Comparable bank-transfer quotes<\/dt><dd>0<\/dd>/);
+test("collected estimates are explicit before the limit on price ranking", () => {
+  const evidence = Array.from({ length: 48 }, (_, index) => quote({
+    id: "estimate-" + index, corridorSlug: "route-" + index,
+    quoteType: "indicative", eligibleForPriceRanking: false,
+  }));
+  const result = summariseProviderRateEvidence("Wise", evidence);
+  assert.equal(result.routeCount, 48);
+  assert.equal(result.indicativeCount, 48);
+  assert.equal(result.quoteCount, 0);
+  assert.equal(result.otherUnrankedCount, 0);
+  assert.equal(result.comparableCount, 0);
+  assert.equal(result.wins, 0);
+  assert.match(result.finding, /^We have collected 48 recent route records for Wise: 48 indicative estimates\./);
+  assert.ok(result.finding.indexOf("48 indicative estimates") < result.finding.indexOf("none qualifies"));
+  const html = renderSummary({ evidence });
+  assert.match(html, /Collected route records in the past 36 hours<\/dt><dd>48<\/dd>/);
+  assert.match(html, /Indicative estimates<\/dt><dd>48<\/dd>/);
+  assert.match(html, /Quotes eligible for price ranking<\/dt><dd>0<\/dd>/);
   assert.match(html, /rolling 36-hour window/);
-  assert.match(html, /route tables use today’s UTC records/);
+  assert.match(html, /Route tables rank today’s UTC records and retain older results in grey/);
   assert.match(html, /Modelled prices, converter rates and introductory offers cannot win/);
   assert.match(html, /Not assessed/);
+  assert.doesNotMatch(html, /No recent price evidence|Other records not ranked/);
+});
+
+test("mixed evidence uses exclusive count categories and labels promotions as a subset", () => {
+  const evidence = [
+    quote(),
+    quote({ quoteType: "indicative", eligibleForPriceRanking: false }),
+    quote({ quoteType: "indicative", promotion: true, eligibleForPriceRanking: false }),
+    quote({ fundingMethod: "debit card", eligibleForPriceRanking: false }),
+    quote({ promotion: true, eligibleForPriceRanking: false }),
+  ];
+  const result = summariseProviderRateEvidence("Wise", evidence);
+  assert.equal(result.routeCount, 5);
+  assert.equal(result.indicativeCount, 2);
+  assert.equal(result.quoteCount, 1);
+  assert.equal(result.otherUnrankedCount, 2);
+  assert.equal(result.promotionCount, 2);
+  assert.equal(result.indicativeCount + result.quoteCount + result.otherUnrankedCount, result.routeCount);
+  assert.equal(result.comparableCount, 1);
+  assert.equal(result.wins, 1);
+  assert.match(result.finding, /2 indicative estimates, 1 eligible bank-transfer quote and 2 other unranked records/);
+  assert.match(result.finding, /2 of these records are promotional/);
+  assert.match(renderSummary({ evidence }), /Other records not ranked<\/dt><dd>2<\/dd>/);
+  const single = summariseProviderRateEvidence("Wise", [evidence[2]]);
+  assert.match(single.finding, /1 recent route record for Wise: 1 indicative estimate\./);
+  assert.match(single.finding, /1 of these records is promotional/);
 });
 
 test("missing price evidence does not assert zero coverage or provider unavailability", () => {

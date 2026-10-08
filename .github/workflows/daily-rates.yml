@@ -2,8 +2,8 @@ name: Daily public rate check
 
 on:
   schedule:
-    - cron: "17 5 * * *"
-    - cron: "17 17 * * *"
+    # Check hourly; the guard runs collection only when today's evidence is missing.
+    - cron: "17 * * * *"
   push:
     branches: [main]
     paths:
@@ -37,7 +37,7 @@ jobs:
         run: node --test tests/rate-freshness.test.mjs
       - name: Check whether recovery is needed
         id: recovery
-        if: github.event_name == 'schedule' && github.event.schedule == '17 17 * * *'
+        if: github.event_name != 'workflow_dispatch'
         working-directory: .
         run: node scripts/check-rate-freshness.mjs guard
       - name: Check ingestion token
